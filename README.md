@@ -1,0 +1,206 @@
+## GEM: Online Globally consistent dense elevation mapping for unstructured terrain
+
+This is a [ROS] package developed for elevation mapping with a mobile robot which modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
+
+The software is designed for (local-global) navigation tasks with robots that are equipped with a pose estimation (e.g. IMU & odometry) and a distance sensor (e.g. structured light (Kinect, RealSense), laser range sensor, stereo camera). The provided local elevation map is limited around the robot and reflects the pose uncertainty that is aggregated through the motion of the robot (robot-centric mapping). The global map is represented as several submaps corresponding to a pose provided by odometry. This method is developed to explicitly handle drift of the robot pose estimation.
+
+The online Globally consistent dense Elevation Mapping (GEM) packages have been tested under ROS Kinetic and Ubuntu 16.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+
+**Author: Peter XU (Xuecheng XU)<br />
+Affiliation: [ZJU-Robotics Lab](https://github.com/ZJU-Robotics-Lab)<br />
+Maintainer: Peter XU, xuechengxu@zju.edu.cn<br />**
+
+This projected was initially developed at Zhejiang University (Robotics Lab, College of Control Science and Engineering).
+
+## Citing
+
+The online globally consistent elevation mapping methods used in this software are described in the following paper (available [here]). If you use this work in an academic context, please cite the following publication(s):
+
+
+
+## Installation
+
+### Dependencies
+
+This software is built on the Robotic Operating System ([ROS]), which needs to be [installed](http://wiki.ros.org) first. Additionally, the Globally consistent dense Elevation Mapping depends on following software:
+
+- [Grid Map](https://github.com/anybotics/grid_map) (grid map library for mobile robots)
+- [kindr](http://github.com/anybotics/kindr) (kinematics and dynamics library for robotics),
+- [kindr_ros](https://github.com/anybotics/kindr_ros) (ROS wrapper for kindr),
+- [Point Cloud Library (PCL)](http://pointclouds.org/) (point cloud processing),
+- [Eigen](http://eigen.tuxfamily.org) (linear algebra library).
+- [CUDA](https://developer.nvidia.com/cuda-toolkit-archive) (gpu process)
+
+
+### Building
+
+In order to install the GEM, clone the latest version from this repository into your catkin workspace and compile the package using ROS.
+
+    cd catkin_workspace/src
+    git clone https://github.com/ZJU-Robotics-Lab/GEM.git
+    cd ../
+    catkin_make
+
+
+## Basic Usage
+
+In order to get the GEM to run with your robot, you will need to adapt a few parameters. It is the easiest if duplicate and adapt all the parameter files that you need to change from the `elevation_mapping_demos` package (e.g. the `simple_demo` example). These are specifically the parameter files in `config` and the launch file from the `launch` folder.
+
+
+## Nodes
+
+### Node: elevation_mapping
+
+This is the main GEM node. It uses the distance sensor measurements and the pose and covariance of the robot to generate an elevation map with variance estimates.
+
+
+#### Subscribed Topics
+
+* **`/points`** ([sensor_msgs/PointCloud2])
+
+    The distance measurements. Modify it in launch/simple_demo.launch
+
+* **`/pose`** ([geometry_msgs/PoseWithCovarianceStamped])
+
+    The robot pose and covariance.
+
+* **`/tf`** ([tf/tfMessage])
+
+    The transformation tree.
+
+
+#### Published Topics
+
+* **`submap`** ([sensor_msgs/PointCloud2])
+
+    The previous submap point cloud for visualization.
+
+* **`history_pointcloud`** ([sensor_msgs/PointCloud2])
+
+    The history pointcloud for visualization.
+
+
+#### Parameters
+
+* **`robot_id`** (string, default: "0")
+
+    The id of the robot (for multi-robot).
+
+* **`robot_name`** (string, default: "robot0")
+
+    The name of the robot (for multi-robot).
+
+* **`map_saving_file`** (string, default: "./map.pcd")
+
+    The filename of saving map pcd.
+
+* **`submap_saving_dir`** (string, default: "./submaps/")
+
+    The directory of saving submaps.
+
+* **`camera_params_yaml`** (string, default: "./params.yaml")
+
+    The filename of camera parameters.
+
+* **`orthomosaic_saving_dir`** (string, default: "./image/")
+
+    The directory of saving orthomosaic image.
+
+* **`base_frame_id`** (string, default: "/robot")
+
+    The id of the robot base tf frame.
+
+* **`map_frame_id`** (string, default: "/map")
+
+    The id of the tf frame of the elevation map.
+
+* **`track_point_frame_id`** (string, default: "/robot")
+
+    The elevation map is moved along with the robot following a *track point*. This is the id of the tf frame in which the track point is defined.
+
+* **`track_point_x`**, **`track_point_y`**, **`track_point_z`** (double, default: 0.0, 0.0, 0.0)
+
+    The elevation map is moved along with the robot following a *track point*. This is the position of the track point in the `track_point_frame_id`.
+
+* **`robot_pose_cache_size`** (int, default: 200, min: 0)
+
+    The size of the robot pose cache.
+
+* **`min_update_rate`** (double, default: 2.0)
+
+    The mininum update rate (in Hz) at which the elevation map is updated either from new measurements or the robot pose estimates.
+
+* **`fused_map_publishing_rate`** (double, default: 1.0)
+
+    The rate for publishing the entire (fused) elevation map.
+
+* **`relocate_rate`** (double, default: 3.0)
+
+    The rate (in Hz) at which the elevation map is checked for relocation following the tracking point.
+
+* **`traversThre`** (double, default: 0.6, min: 0.0)
+
+    The threshold of traversibility.
+
+* **`length_in_x`**, **`length_in_y`** (double, default: 1.5, min: 0.0)
+
+    The size (in m) of the elevation map.
+
+* **`position_x`**, **`position_y`** (double, default: 0.0)
+
+    The position of the elevation map (center) in the elevation map frame.
+
+* **`resolution`** (double, default: 0.01, min: 0.0)
+
+    The resolution (cell size in m/cell) of the elevation map.
+
+* **`min_variance`**, **`max_variance`** (double, default: 9.0e-6, 0.01)
+
+    The minimum and maximum values for the elevation map variance data.
+
+* **`mahalanobis_distance_threshold`** (double, default: 2.5)
+
+    The threshold for the Mahalanobis distance. Decides if measurements are fused with the existing data, overwritten or ignored.
+
+* **`multi_height_noise`** (double, default: 9.0e-7)
+
+    Added noise for cell with multiple height measurements (e.g. walls).
+
+* **`min_horizontal_variance`**, **`max_horizontal_variance`** (double, default: pow(resolution / 2.0, 2), 0.5)
+
+    The minimum and maximum values for the elevation map horizontal variance data.
+
+* **`enable_visibility_cleanup`** (bool, default: true)
+
+    Enable visibility cleanup. This runs a separate thread to remove elements in the map based on the visibility constraint.
+
+* **`visibility_cleanup_rate`** (double, default: 1.0)
+
+    The rate (in Hz) at which the visibility constraint is performed.
+
+* **`scanning_duration`** (double, default: 1.0)
+
+    The sensor's scanning duration (in s) which is used for the visibility cleanup. Set this roughly to the duration it takes between two consecutive full scans (e.g. 0.033 for a ToF camera with 30 Hz, or 3 s for a rotating laser scanner). Depending on how dense or sparse your scans are, increase or reduce the scanning duration. Smaller values lead to faster dynamic object removal and bigger values help to reduce faulty map cleanups.   
+
+* **`sensor_cutoff_min_depth`**, **`sensor_cutoff_max_depth`** (double, default: 0.2, 2.0)
+
+    The minimum and maximum values for the length of the distance sensor measurements. Measurements outside this interval are ignored.
+
+* **`sensor_model_normal_factor_a`**, **`sensor_model_normal_factor_b`**, **`sensor_model_normal_factor_c`**, **`sensor_model_lateral_factor`** (double)
+
+    The data for the sensor noise model.
+
+
+## Bugs & Feature Requests
+
+Please report bugs and request features using the [Issue Tracker](https://github.com/ZJU-Robotics-Lab/GEM/issues).
+
+
+[ROS]: http://www.ros.org
+[rviz]: http://wiki.ros.org/rviz
+[grid_map_msg/GridMap]: https://github.com/anybotics/grid_map/blob/master/grid_map_msg/msg/GridMap.msg
+[sensor_msgs/PointCloud2]: http://docs.ros.org/api/sensor_msgs/html/msg/PointCloud2.html
+[geometry_msgs/PoseWithCovarianceStamped]: http://docs.ros.org/api/geometry_msgs/html/msg/PoseWithCovarianceStamped.html
+[tf/tfMessage]: http://docs.ros.org/kinetic/api/tf/html/msg/tfMessage.html
+[std_srvs/Empty]: http://docs.ros.org/api/std_srvs/html/srv/Empty.html
+[grid_map_msg/GetGridMap]: https://github.com/anybotics/grid_map/blob/master/grid_map_msg/srv/GetGridMap.srv

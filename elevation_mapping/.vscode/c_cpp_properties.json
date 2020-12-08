@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/mav-lab/slam_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/mav-lab/slam_ws/src/beginner_tutorials/include/**",
+                "/home/mav-lab/slam_ws/src/ctf/include/**",
+                "/home/mav-lab/slam_ws/src/elevation_mapping-master/elevation_mapping/include/**",
+                "/home/mav-lab/slam_ws/src/kindr_ros/kindr_ros/include/**",
+                "/home/mav-lab/slam_ws/src/kindr_ros/kindr_rviz_plugins/include/**",
+                "/home/mav-lab/slam_ws/src/kindr_ros/multi_dof_joint_trajectory_rviz_plugins/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
