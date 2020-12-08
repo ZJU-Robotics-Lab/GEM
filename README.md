@@ -17,6 +17,8 @@ This project was developed at Zhejiang University (Robotics Lab, College of Cont
 ## Loop Performance (Loop version is coming soon)
 <img alt="Elevation Map before loop" src="elevation_mapping_demos/doc/before_loop.png" width="700">
 <img alt="Elevation Map after loop" src="elevation_mapping_demos/doc/after_loop.png" width="700">
+
+## Video
 <a alt="GEM" href="https://youtu.be/MufkLpkNhhY"><img src="elevation_mapping_demos/doc/cross_road.png" width="700" ></a>
 
 ## Citing
