@@ -10,13 +10,19 @@ The online Globally consistent dense Elevation Mapping (GEM) packages have been 
 Affiliation: [ZJU-Robotics Lab](https://github.com/ZJU-Robotics-Lab)<br />
 Maintainer: Peter XU, xuechengxu@zju.edu.cn<br />**
 
-This projected was initially developed at Zhejiang University (Robotics Lab, College of Control Science and Engineering).
+This project was developed at Zhejiang University (Robotics Lab, College of Control Science and Engineering).
+
+<img alt="Elevation Map Example" src="elevation_mapping_demos/doc/cross_road.png" width="700">
+
+<center class="half">
+<img alt="Elevation Map before loop" src="elevation_mapping_demos/doc/before_loop.png" width="350"><img alt="Elevation Map after loop" src="elevation_mapping_demos/doc/after_loop.png" width="350">
+</center>
 
 ## Citing
 
 The online globally consistent elevation mapping methods used in this software are described in the following paper (available [here]). If you use this work in an academic context, please cite the following publication(s):
 
-
+(Coming Soon~)
 
 ## Installation
 
@@ -59,10 +65,6 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 * **`/points`** ([sensor_msgs/PointCloud2])
 
     The distance measurements. Modify it in launch/simple_demo.launch
-
-* **`/pose`** ([geometry_msgs/PoseWithCovarianceStamped])
-
-    The robot pose and covariance.
 
 * **`/tf`** ([tf/tfMessage])
 
@@ -126,6 +128,10 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 
     The size of the robot pose cache.
 
+* **`robot_local_map_size`** (int, default: 20)
+
+    The local map size.
+
 * **`min_update_rate`** (double, default: 2.0)
 
     The mininum update rate (in Hz) at which the elevation map is updated either from new measurements or the robot pose estimates.
@@ -150,7 +156,7 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 
     The position of the elevation map (center) in the elevation map frame.
 
-* **`resolution`** (double, default: 0.01, min: 0.0)
+* **`resolution`** (double, default: 0.1, min: 0.0)
 
     The resolution (cell size in m/cell) of the elevation map.
 
