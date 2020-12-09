@@ -6,7 +6,7 @@ The software is designed for (local-global) navigation tasks with robots that ar
 
 The online Globally consistent dense Elevation Mapping (GEM) packages have been tested under ROS Kinetic and Ubuntu 16.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
-**Author: Peter XU (Xuecheng XU)<br />
+**Author: Peter XU (Xuecheng XU), Yiyuan PAN<br />
 Affiliation: [ZJU-Robotics Lab](https://github.com/ZJU-Robotics-Lab)<br />
 Maintainer: Peter XU, xuechengxu@zju.edu.cn<br />**
 
@@ -25,7 +25,18 @@ This project was developed at Zhejiang University (Robotics Lab, College of Cont
 
 The online globally consistent elevation mapping methods used in this software are described in the following paper (available [here]). If you use this work in an academic context, please cite the following publication(s):
 
-(Coming Soon~)
+* > Y Pan, X. Xu, Y Wang, X Ding and R Xiong,
+  > **"GPU accelerated real-time traversability mapping"**,
+  > in 2019 IEEE International Conference on Robotics and Biomimetics (ROBIO), 734-740 ([PDF](https://ieeexplore.ieee.org/abstract/document/8961816))
+
+      @inproceedings{pan2019gpu,
+        title={GPU accelerated real-time traversability mapping},
+        author={Pan, Yiyuan and Xu, Xuecheng and Wang, Yue and Ding, Xiaqing and Xiong, Rong},
+        booktitle={2019 IEEE International Conference on Robotics and Biomimetics (ROBIO)},
+        pages={734--740},
+        year={2019},
+        organization={IEEE}
+      }
 
 ## Installation
 
