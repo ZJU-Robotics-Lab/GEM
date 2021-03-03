@@ -1,8 +1,8 @@
 ## GEM: Online Globally consistent dense elevation mapping for unstructured terrain
 
-This is a [ROS] package developed for elevation mapping with a mobile robot which modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
+This is a [ROS] package developed for elevation mapping with a mobile robot which is modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
 
-The software is designed for (local-global) navigation tasks with robots that are equipped with a pose estimation (e.g. IMU & odometry) and a distance sensor (e.g. structured light (Kinect, RealSense), laser range sensor, stereo camera). The provided local elevation map is limited around the robot and reflects the pose uncertainty that is aggregated through the motion of the robot (robot-centric mapping). The global map is represented as several submaps corresponding to a pose provided by odometry. This method is developed to explicitly handle drift of the robot pose estimation.
+The software is designed for (local-global) navigation tasks with robots that are equipped with pose estimation (e.g. IMU & odometry) and a distance sensor (e.g. structured light (Kinect, RealSense), laser range sensor, stereo camera). The provided local elevation map is limited around the robot and reflects the pose uncertainty that is aggregated through the motion of the robot (robot-centric mapping). The global map is represented as several submaps corresponding to a pose provided by odometry. This method is developed to explicitly handle drift of the robot pose estimation.
 
 The online Globally consistent dense Elevation Mapping (GEM) packages have been tested under ROS Kinetic and Ubuntu 16.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
