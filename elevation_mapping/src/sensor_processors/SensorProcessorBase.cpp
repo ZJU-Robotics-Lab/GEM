@@ -1,11 +1,10 @@
 /*
  * SensorProcessorBase.cpp
  *
- *  Created on: Jun 6, 2014
- *      Author: Péter Fankhauser, Hannes Keller
- *   Institute: ETH Zurich, ANYbotics
+ *  Created on: Nov 22, 2019
+ *      Author: Peter XU
+ *	 Institute: ZJU, CSC 104
  */
-
 #include <elevation_mapping/sensor_processors/SensorProcessorBase.hpp>
 
 //PCL

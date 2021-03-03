@@ -104,21 +104,27 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle)
   initialize();
 }
 
+
 void ElevationMapping::Run()
 {
   savingSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/map_saving", 1, &ElevationMapping::mapSavingSignal, this);
 }
 
+
+// Sync thread for lidar and image topic
 void ElevationMapping::startsync()
 {
   connection = sync.registerCallback(boost::bind(&ElevationMapping::Callback, this, _1, _2));
 }
+
 
 ElevationMapping::~ElevationMapping()
 {
   nodeHandle_.shutdown();
 }
 
+
+// Parameter reading
 bool ElevationMapping::readParameters()
 {
   // ElevationMapping parameters.
@@ -198,6 +204,7 @@ bool ElevationMapping::readParameters()
   return true;
 }
 
+
 bool ElevationMapping::initialize()
 {
   ROS_INFO("Elevation mapping node initializing ... ");
@@ -213,6 +220,7 @@ bool ElevationMapping::initialize()
 }
 
 
+// Main process of input point cloud
 void ElevationMapping::processpoints(pcl::PointCloud<Anypoint>::ConstPtr pointCloud)
 { 
   ros::Time begin_time = ros::Time::now ();
@@ -235,9 +243,12 @@ void ElevationMapping::processpoints(pcl::PointCloud<Anypoint>::ConstPtr pointCl
   }
 
   boost::recursive_mutex::scoped_lock lock(MapMutex_);
+
+  // GPU process
   Fuse(length_, point_num, point_index, point_colorR, point_colorG, point_colorB, point_intensity, point_height, point_var);
   lock.unlock();
 }
+
 
 void ElevationMapping::processmapcells()
 {
@@ -252,6 +263,8 @@ void ElevationMapping::processmapcells()
   lock.unlock();   
 }
 
+
+// Utility function
 Eigen::Matrix<double,4,4> toMatrix44(const cv::Mat &cvMat)
 {
     Eigen::Matrix<double,4,4> M;
@@ -264,6 +277,8 @@ Eigen::Matrix<double,4,4> toMatrix44(const cv::Mat &cvMat)
     return M;
 }
 
+
+// Utility function
 Eigen::Matrix<double,3,4> toMatrix34(const cv::Mat &cvMat)
 {
     Eigen::Matrix<double,3,4> M;
@@ -275,8 +290,11 @@ Eigen::Matrix<double,3,4> toMatrix34(const cv::Mat &cvMat)
     return M;
 }
 
+
+// Main callback
 void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPointCloud, const sensor_msgs::Image::ConstPtr& image)
 {
+  // Convert input point cloud and image msgs
   ros::Time begin_time = ros::Time::now ();
   sensor_msgs::PointCloud2 output = *rawPointCloud;
   pcl::PCLPointCloud2 Point_cloud;
@@ -358,11 +376,13 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   updatepointsMapLocation();
   updateMapLocation();
 
+  // Multi-thread process (GPU process)
   std::thread t1(&ElevationMapping::processpoints, this, pointCloud);
   std::thread t2(&ElevationMapping::processmapcells, this);
   t1.join();
   t2.join();  
 
+  // Intermediate storage
   float elevation[length_ * length_];
   int point_colorR[length_ * length_];
   int point_colorG[length_ * length_];
@@ -373,20 +393,24 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   float var[length_ * length_];
   float intensity[length_ * length_];
 
+  // GPU process of map information
   Map_feature(length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
-  // for(auto i = 0; i < length_ * length_; i++){
-  //   cout << "point intensity " << intensity[i] << endl;
-  // }
+
+  // Visualize grid map
   map_.show(timeStamp, robot_name, trackPointTransformed_x, trackPointTransformed_y, length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
 
+  // Local map process
   updateLocalMap();
   visualPointMap();
 
+  // Clear the moving obstacles
   Raytracing(length_);
   prevMap_ = map_.visualMap_;
   // calculate_memory_usage();
 }
 
+
+// For paper evaluation
 void ElevationMapping::calculate_memory_usage()
 {
     double usgae_KB = 0;
@@ -396,6 +420,8 @@ void ElevationMapping::calculate_memory_usage()
     // printf("the process comsumes %f KB\n", usgae_KB);
 }
 
+
+// Saving map need signal to trigger
 void ElevationMapping::savingMap()
 {
   gmap_.setFrameId("/" + robot_name + "/map");
@@ -451,9 +477,10 @@ void ElevationMapping::savingSubMap()
     ROS_INFO("Saving Map to %s", currentName_);
     pcl::io::savePCDFile(currentName_, cloudpt);
   }
-
 }
 
+
+// Visualization
 void ElevationMapping::visualPointMap()
 {
   pcl::PointCloud<Anypoint>::Ptr cloud_in(new pcl::PointCloud<Anypoint>);
@@ -466,6 +493,8 @@ void ElevationMapping::visualPointMap()
 
 }
 
+
+// Saving signal receiver
 void ElevationMapping::mapSavingSignal(const std_msgs::Bool::ConstPtr& savingSignal)
 {
   if(savingSignal->data == 1)
@@ -474,6 +503,8 @@ void ElevationMapping::mapSavingSignal(const std_msgs::Bool::ConstPtr& savingSig
   ROS_WARN("Saving Global Map at: %s.", map_saving_file_.c_str());
 }
 
+
+// Utility function
 void ElevationMapping::localHashtoPointCloud(umap localMap, pointCloud::Ptr& outCloud)
 {
   pointCloud hashPointCloud;
@@ -491,6 +522,8 @@ void ElevationMapping::localHashtoPointCloud(umap localMap, pointCloud::Ptr& out
   outCloud = hashPointCloud.makeShared();
 }
 
+
+// Utility function
 void ElevationMapping::pointCloudtoHash(pointCloud localPointCloud, umap& out)
 {
   for(size_t i = 0; i < localPointCloud.size (); ++i){
@@ -505,10 +538,14 @@ void ElevationMapping::pointCloudtoHash(pointCloud localPointCloud, umap& out)
   }
 }
 
+
+// Utility function
 void ElevationMapping::gridMaptoPointCloud(grid_map::GridMap gridmap, pointCloud::Ptr& pc)
 {
 }
 
+
+// Local map process
 void ElevationMapping::updateLocalMap()
 {
   int index, index_x, index_y;
@@ -535,6 +572,7 @@ void ElevationMapping::updateLocalMap()
     ROS_WARN("NEW KEYFRAME ****************");
   }
   
+  // Handle the optimization delay
   if(JumpFlag == 1){
     pointCloud cloudUpdated;
     pointCloud::Ptr updatedLocalMap;
@@ -609,7 +647,7 @@ void ElevationMapping::updateLocalMap()
   ROS_INFO("Move_x: %lf, Move_y: %lf ",delta_x, delta_y);
   int count = 0;
 
-  // Local mapping
+  // Local mapping: Incremental local map update
   if(abs(delta_x) >= resolution_ || abs(delta_y) >= resolution_ && initFlag == 0 && JumpFlag == 0){// && (JumpOdomFlag == 0 || newLocalMapFlag == 0)){
     for (GridMapIterator iterator(prevMap_); !iterator.isPastEnd(); ++iterator) {   // Add L shape infomation of the previous grid map into the local map
 
@@ -662,6 +700,7 @@ void ElevationMapping::updateLocalMap()
   JumpFlag = 0;
 }
 
+
 bool ElevationMapping::updatePrediction(const ros::Time& time)
 {
   if (ignoreRobotMotionUpdates_) return true;
@@ -704,6 +743,7 @@ bool ElevationMapping::updatePrediction(const ros::Time& time)
   return true;
 }
 
+
 bool ElevationMapping::updatepointsMapLocation()
 {
   ROS_DEBUG("Elevation map is checked for relocalization.");
@@ -725,6 +765,7 @@ bool ElevationMapping::updatepointsMapLocation()
   trackPointTransformed_y = trackPointTransformed.point.y;
   trackPointTransformed_z = trackPointTransformed.point.z;
 }
+
 
 bool ElevationMapping::updateMapLocation()
 {
@@ -827,6 +868,7 @@ bool ElevationMapping::updateMapLocation()
   return true;
 }
 
+
 void ElevationMapping::resetMapUpdateTimer()
 {
   mapUpdateTimer_.stop();
@@ -835,6 +877,7 @@ void ElevationMapping::resetMapUpdateTimer()
   mapUpdateTimer_.setPeriod(maxNoUpdateDuration_ - periodSinceLastUpdate);
   mapUpdateTimer_.start();
 }
+
 
 void ElevationMapping::stopMapUpdateTimer()
 {

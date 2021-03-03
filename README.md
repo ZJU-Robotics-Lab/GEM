@@ -37,7 +37,20 @@ The online globally consistent elevation mapping methods used in this software a
         year={2019},
         organization={IEEE}
       }
+  
+* > Y Pan, X. Xu, X Ding, Shoudong Huang, Y Wang, and R Xiong,
+  > **"GEM: Online Globally Consistent Dense Elevation Mapping for Unstructured Terrain"**,
+  > **Published in:** [IEEE Transactions on Instrumentation and Measurement](https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=19) ( Volume: 70)([PDF](https://ieeexplore.ieee.org/document/9293017))
 
+      @ARTICLE{9293017,  
+      author={Y. {Pan} and X. {Xu} and X. {Ding} and S. {Huang} and Y. {Wang} and R. {Xiong}},  
+      journal={IEEE Transactions on Instrumentation and Measurement},   
+      title={GEM: Online Globally Consistent Dense Elevation Mapping for Unstructured Terrain},   
+      year={2021},  
+      volume={70},  
+      number={},  
+      pages={1-13},  
+      doi={10.1109/TIM.2020.3044338}}
 ## Installation
 
 ### Dependencies

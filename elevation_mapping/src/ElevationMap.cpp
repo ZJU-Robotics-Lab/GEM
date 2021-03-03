@@ -65,6 +65,7 @@ ElevationMap::~ElevationMap()
 {
 }
 
+
 void ElevationMap::setGeometry(const grid_map::Length& length, const double& resolution, const grid_map::Position& position)
 {
   rawMap_.setGeometry(length, resolution, position);
@@ -73,6 +74,7 @@ void ElevationMap::setGeometry(const grid_map::Length& length, const double& res
 }
 
 
+// Visualization of map
 void ElevationMap::show(ros::Time timeStamp, string robot_name, float trackPointTransformed_x, float trackPointTransformed_y, int length, float *elevation, float *var, int *point_colorR, int *point_colorG, int *point_colorB, float *rough, float *slope, float *traver, float* intensity)
 {
   cv::Mat image(length, length, CV_8UC3, cv::Scalar(0,0,0));
@@ -145,6 +147,7 @@ void ElevationMap::show(ros::Time timeStamp, string robot_name, float trackPoint
   visualMapPublisher_.publish(message);
 }
 
+
 bool ElevationMap::clear()
 {
   rawMap_.clearAll();
@@ -153,6 +156,7 @@ bool ElevationMap::clear()
   visualMap_.resetTimestamp();
   return true;
 }
+
 
 void ElevationMap::opt_move(Position M_position, float update_height)
 {
@@ -166,6 +170,7 @@ void ElevationMap::opt_move(Position M_position, float update_height)
   }
 }
 
+
 void ElevationMap::move(const Index M_startindex, Position M_position)
 {
   visualMap_.setStartIndex(M_startindex);
@@ -173,26 +178,31 @@ void ElevationMap::move(const Index M_startindex, Position M_position)
   
 }
 
+
 grid_map::GridMap& ElevationMap::getRawGridMap()
 {
   return rawMap_;
 }
+
 
 ros::Time ElevationMap::getTimeOfLastUpdate()
 {
   return ros::Time().fromNSec(rawMap_.getTimestamp());
 }
 
+
 const kindr::HomTransformQuatD& ElevationMap::getPose()
 {
   return pose_;
 }
+
 
 void ElevationMap::setFrameId(const std::string& frameId)
 {
   rawMap_.setFrameId(frameId);
   visualMap_.setFrameId(frameId);
 }
+
 
 const std::string& ElevationMap::getFrameId()
 {
