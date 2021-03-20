@@ -63,8 +63,8 @@ This software is built on the Robotic Operating System ([ROS]), which needs to b
 - [Point Cloud Library (PCL)](http://pointclouds.org/) (point cloud processing),
 - [Eigen](http://eigen.tuxfamily.org) (linear algebra library, tested on 3.2.9 & 3.3.4; failed on 3.3.9).
 - [CUDA](https://developer.nvidia.com/cuda-toolkit-archive) (gpu process)
+- [slam_msg](https://github.com/ZJU-Robotics-Lab/slam_msg) (msg need for detected loops)
 - cudnn (pay attention to the version: CUDA 10.0 -> cudnn 7.4; CUDA 10.1 -> cudnn 7.6)
-
 
 ### Building
 
