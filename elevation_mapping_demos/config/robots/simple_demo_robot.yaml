@@ -12,5 +12,5 @@ track_point_y: 0.0
 track_point_z: 0.0
 map_saving_file: "./map.pcd"
 submap_saving_dir: "./submaps/"
-camera_params_yaml: "./params.yaml"
+camera_params_yaml: "./kitti_intrinsic.yaml"
 orthomosaic_saving_dir: "./image/"
