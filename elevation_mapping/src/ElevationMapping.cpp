@@ -499,7 +499,7 @@ void ElevationMapping::mapSavingSignal(const std_msgs::Bool::ConstPtr& savingSig
 {
   if(savingSignal->data == 1)
     savingMap();
-    savingSubMap();
+    //savingSubMap();
   ROS_WARN("Saving Global Map at: %s.", map_saving_file_.c_str());
 }
 
