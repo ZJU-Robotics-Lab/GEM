@@ -225,6 +225,13 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
     The data for the sensor noise model.
 
 
+## NEW FEATURES
+
+**1. Multi-resolution map representation implemented with octomap**
+
+**2. Submap point cloud upsample implemented by mls api in PCL**
+
+
 ## Bugs & Feature Requests
 
 Please report bugs and request features using the [Issue Tracker](https://github.com/ZJU-Robotics-Lab/GEM/issues).
