@@ -27,7 +27,7 @@ struct PointXYZRGBIC
     PCL_ADD_RGB;
 
     float covariance;
-    float i;
+    float intensity;
 
     PointXYZRGBIC() {}
     PointXYZRGBIC(const PointXYZRGBIC& input)
@@ -36,7 +36,7 @@ struct PointXYZRGBIC
         this->y = input.y;
         this->z = input.z;
         this->rgb = input.rgb;
-        this->i = input.i;
+        this->intensity = input.intensity;
         this->covariance = input.covariance;
     }
 
@@ -48,7 +48,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZRGBIC,
                                    (float, y, y)
                                    (float, z, z)
                                    (float, rgb, rgb)
-                                   (float, i, i)
+                                   (float, intensity, intensity)
                                    (float, covariance, covariance)
 );
 

@@ -2,7 +2,7 @@
  * gpu_process.cu
  *
  *  Created on: Aug 1, 2019
- *      Author: YiYuan PAN
+ *      Author: YiYuan PAN, Peter XU
  *	 Institute: ZJU, Robotics 104
  */
 
@@ -37,7 +37,6 @@ __constant__ float Resolution;
 __constant__ float obstacle_threshold;
 
 //points_
-
 __constant__ int C_point_num;
 __constant__ float C_min_r;
 __constant__ float C_beam_a;
@@ -79,16 +78,16 @@ __device__ void computerEigenvalue(float *pMatrix,int nDim, float *maxvector, fl
 		} 
 	} 
  
-	int nCount = 0;		//迭代次数
+	int nCount = 0;	//迭代次数
 	while(1)
 	{
 		//在pMatrix的非对角线上找到最大元素
 		float dbMax = pMatrix[1];
 		int nRow = 0;
 		int nCol = 1;
-		for (int i = 0; i < nDim; i ++)			//行
+		for (int i = 0; i < nDim; i ++)	//行
 		{
-			for (int j = 0; j < nDim; j ++)		//列
+			for (int j = 0; j < nDim; j ++)	//列
 			{
 				float d = fabs(pMatrix[i*nDim+j]); 
  
@@ -101,10 +100,10 @@ __device__ void computerEigenvalue(float *pMatrix,int nDim, float *maxvector, fl
 			}
 		}
  
-		if(dbMax < dbEps)     //精度符合要求 
+		if(dbMax < dbEps) //精度符合要求 
 			break;  
  
-		if(nCount > nJt)       //迭代次数超过限制
+		if(nCount > nJt) //迭代次数超过限制
 			break;
  
 		nCount++;
@@ -181,14 +180,11 @@ __device__ void computerEigenvalue(float *pMatrix,int nDim, float *maxvector, fl
         }
     } 
 
-
     for(int i = 0; i < nDim; i ++) 
     {  
         maxvector[i] = pdblVects[min_id + nDim * i];
     }
 }
-
-
 
 //geographic location to memory location index
 __device__ int dev_IndexToRange(int *cell_p){
@@ -198,8 +194,6 @@ __device__ int dev_IndexToRange(int *cell_p){
     int index = d_index[0] * Length + d_index[1];
     return index;
 }
-
-
 
 __global__ void G_Init_map()
 {    
@@ -243,7 +237,6 @@ __global__ void G_Clear_maplowest()
         //printf("%f ", map_elevation[i]);
     }
 }
-
 
 __global__ void G_Printf_map()
 {    
@@ -364,8 +357,6 @@ __device__ int PointsToMapIndex(float p_x, float p_y)
     return index;
 }
 
-
-
 __device__ static float atomicMax(float* address, float val) 
 { 
     int* address_as_i = (int*) address; 
@@ -390,7 +381,6 @@ __device__ static float atomicMin(float* address, float val)
     return __int_as_float(old); 
 } 
 
-
 __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, float *point_z, float *result_var, float *point_x_ts, float *point_y_ts, float *point_z_ts, Eigen::Matrix4f transform, int point_num, Eigen::RowVector3f C_sensorJacobian, Eigen::Matrix3f C_rotationVariance, Eigen::Matrix3f C_C_SB_transpose, Eigen::RowVector3f C_P_mul_C_BM_transpose, Eigen::Matrix3f C_B_r_BS_skew)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x; 
@@ -400,7 +390,7 @@ __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, 
 		
 		int flag = 0;
         // !!! IMPORTANT FILTER PARAMETERS
-		if(point_x[i] < 0 || (point_x[i] > -1.5 && point_x[i] < 2.7 && point_y[i] > -1.5 && point_y[i] < 1.5))
+		if((point_x[i] > -1.5 && point_x[i] < 1.5 && point_y[i] > -1.5 && point_y[i] < 1.5) || (point_y[i] > -1 && point_y[i] < 1))
 		{
 			flag = 1;
 		}
@@ -409,8 +399,6 @@ __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, 
 			point_x_ts[i] = transform(0, 0) * point_x[i] + transform(0, 1) * point_y[i] + transform(0, 2) * point_z[i] + transform(0, 3) ;
 			point_y_ts[i] = transform(1, 0) * point_x[i] + transform(1, 1) * point_y[i] + transform(1, 2) * point_z[i] + transform(1, 3) ;
 			point_z_ts[i] = point_height;
-
-
 
 			Eigen::Vector3f pointVector(point_x[i], point_y[i], point_z[i]); // S_r_SP
 			float heightVariance = 0.0; // sigma_p
@@ -437,7 +425,6 @@ __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, 
 			heightVariance += cuda_computer(C_sensorJacobian, sensorVariance, C_sensorJacobian_T);
 	
 			// Copy to list.
-
             result_var[i] = heightVariance;
             
             int grid_index = PointsToIndex(point_x_ts[i], point_y_ts[i]);
@@ -463,7 +450,8 @@ __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, 
 			result_var[i] = -1;
 		}
     }
-    //printf("GPU points:i:%d;x:%f;y:%f;z:%f", i, point_x_ts[i], point_y_ts[i], point_z_ts[i]);
+    // Debug
+    // printf("GPU points:i:%d;x:%f;y:%f;z:%f", i, point_x_ts[i], point_y_ts[i], point_z_ts[i]);
 }
 
 __global__ void G_get_mapinfo(int cell_num, float *dev_map_ele, float *dev_map_var)
@@ -489,7 +477,6 @@ __global__ void G_set_mapinfo(int cell_num, float *dev_map_ele, float *dev_map_v
 __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG, int *points_colorB, float* points_intensity, float *points_h, float *points_v, int point_num){
     int map_index = blockDim.x * blockIdx.x + threadIdx.x; 
     if(map_index < Length * Length){
-        //int index = dev_IndexToRange(d_points[i].cells_p);
        for(int i = 0; i < point_num; i++)
        {
             if(point_index[i] != map_index || points_h[i] == -1)
@@ -508,8 +495,8 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
             }
             else{
             // Deal with multiple heights in one cell.
-            //fabs,sqrt！！！！！！！！！！！！！！！！！！
-            //printf("points height:%f;points var:%f;point_num:%d;cells height:%f, map_variance:%f\n", points_max[i], points_var[i], points_num[i], map_elevation[map_index], map_variance[map_index]);
+            // Debug fabs,sqrt！！！！！！！！！！！！！！！！！！
+            // printf("points height:%f;points var:%f;point_num:%d;cells height:%f, map_variance:%f\n", points_max[i], points_var[i], points_num[i], map_elevation[map_index], map_variance[map_index]);
                 const float mahalanobisDistance = fabs(points_h[i] - map_elevation[map_index]) / sqrt(map_variance[map_index]);
                 //printf("mahalanobisDistance:%f\n", mahalanobisDistance);
                 if (mahalanobisDistance > 5) {
@@ -535,6 +522,7 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
                         map_colorG[map_index] = points_colorG[i];
                         map_colorB[map_index] = points_colorB[i];
                     }
+                    // Debug
                     //printf("point_var:%f, map_variance:%f\n", points_v[i], map_variance[map_index]);
                 }  
             }
@@ -545,7 +533,6 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
 
     }
 }
-
 
 //计算每块地图的X，Y,XY方差
 __global__ void G_Mapvar_update(float var_update)
@@ -561,11 +548,10 @@ __global__ void G_Mapfeature(int *d_colorR, int *d_colorG, int *d_colorB, float 
 {
     
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
-
     if(idx >= Length * Length) return;
-   
+
     Pos3 point[25];
-    
+
     float s_z;
     float px_mean = 0;
     float py_mean = 0;
@@ -578,8 +564,11 @@ __global__ void G_Mapfeature(int *d_colorR, int *d_colorG, int *d_colorB, float 
 
     int Ele_x;
     int Ele_y;
+
+    // Debug
     //slope[idx] = map_height[idx];
     //printf("X:%d,Y:%d,height:%f", cell_x, cell_y, map_height[idx]);
+
     d_elevation[idx] = map_elevation[idx];
     d_colorR[idx] = map_colorR[idx];
     d_colorG[idx] = map_colorG[idx];
@@ -654,7 +643,6 @@ __global__ void G_Mapfeature(int *d_colorR, int *d_colorG, int *d_colorB, float 
         
         float height = map_elevation[idx];
         float smooth_height = pz_mean;
-
         
         if(normal_vec[2] > 0)
             Slope = acos(normal_vec[2]);
@@ -681,7 +669,6 @@ __global__ void G_Mapfeature(int *d_colorR, int *d_colorG, int *d_colorB, float 
     
 }
 
-
 __device__ void StorageP2geoP(int index_s_x, int index_s_y, int *index_g){
     index_g[0] = (index_s_x + Length - start_indice[0]) % Length;
     index_g[1] = (index_s_y + Length - start_indice[1]) % Length;
@@ -692,7 +679,6 @@ __device__ int Storageindex(int index_g_x, int index_g_y){
     return index_s;
 }
 
-
 __device__ bool P_isVaild(int cell_index_x, int cell_index_y)
 {
     int storage_index = Storageindex(cell_index_x, cell_index_y); 
@@ -701,20 +687,19 @@ __device__ bool P_isVaild(int cell_index_x, int cell_index_y)
         return false;
     else
         return true;
-
 }
+
 __device__ float d_min_elevation(int cell_index_x, int cell_index_y, int obstacle_index_x, float robot_index_x)
 {
-   
     float x1 = (float)(cell_index_x - obstacle_index_x);
     float x2 = (float)cell_index_x - robot_index_x;
-
     int storage_index = Storageindex(cell_index_x, cell_index_y); 
-    //map_lowest[storage_index] = 1;
-    //d_map_clean[storage_index] = 0;
     
-    float h2 = sensorZatLowestScan - map_lowest[storage_index];
+    // Debug
+    // map_lowest[storage_index] = 1;
+    // d_map_clean[storage_index] = 0;
     
+    float h2 = sensorZatLowestScan - map_lowest[storage_index]; 
     float obstacle_max_ele = map_lowest[storage_index] + h2 / x2 * x1;
     
     return obstacle_max_ele;
@@ -726,9 +711,9 @@ __global__ void G_Raytracing()
 	if (i < Length * Length){
         if(map_traver[i] < obstacle_threshold && map_elevation[i] != -10)
         {
-            //printf("i:%d,map_traver:%f\n", i, map_traver[i]);
-            //d_map_clean[i] = -1;
-            
+            // Debug
+            // printf("i:%d,map_traver:%f\n", i, map_traver[i]);
+            // d_map_clean[i] = -1;
             int cell_x = i / Length;
             int cell_y = i % Length;
             
@@ -830,17 +815,13 @@ __global__ void G_Raytracing()
 
             float dir_num_later = 0;
           
-            
-            
-  
-            //std::cout << "threshold" << threshold << std::endl;
-            //std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl; 
+            // Debug
+            // std::cout << "threshold" << threshold << std::endl;
+            // std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl; 
             while(current_indice[0] >= 0 && current_indice[0] < Length && current_indice[1] >= 0 && current_indice[1] < Length)
             {
-                
                 if(dir_num_x > dir_num_y)
                 {
-                
                     if(dir_num_y - dir_num_later > threshold && current_indice[0] != obstacle_indice[0] && current_indice[1] != obstacle_indice[1])
                     {
                         if(P_isVaild(current_indice[0], current_indice[1]))
@@ -854,9 +835,7 @@ __global__ void G_Raytracing()
                 
                     current_indice[1] += increment_y;
                     bound_increment_y += (float)increment_y;
-
                     dir_num_later = dir_num_y;
-
                     dir_num_y = bound_increment_y / dir[1];         
                 }
                 else if(dir_num_x < dir_num_y)
@@ -867,11 +846,11 @@ __global__ void G_Raytracing()
                         {
                             obstacle_max_ele = d_min_elevation(current_indice[0], current_indice[1], obstacle_indice[0], robot_index);    
                             if(obstacle_max_ele < obstacle_restrict_ele)
-                                obstacle_restrict_ele = obstacle_max_ele;  
-                            //std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl;
+                                obstacle_restrict_ele = obstacle_max_ele; 
+                            // Debug 
+                            // std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl;
                         } 
                     }
-                      
                     current_indice[0] += increment_x;  
                     bound_increment_x += (float)increment_x;
                     dir_num_later = dir_num_x;
@@ -886,7 +865,8 @@ __global__ void G_Raytracing()
                             obstacle_max_ele = d_min_elevation(current_indice[0], current_indice[1], obstacle_indice[0], robot_index);    
                             if(obstacle_max_ele < obstacle_restrict_ele)
                                 obstacle_restrict_ele = obstacle_max_ele;  
-                        //std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl;
+                        // Debug
+                        // std::cout << "x:"<<current_indice[0] << " y:" << current_indice[1]<< std::endl;
                         } 
                     }
                     current_indice[0] += increment_x;  
@@ -899,8 +879,9 @@ __global__ void G_Raytracing()
                     
                 }
             }
-            //printf("height:%f,restrict_height:%f\n", obstacle_ele, obstacle_restrict_ele);
-            //d_map_clean[i] = obstacle_restrict_ele;
+            // Debug
+            // printf("height:%f,restrict_height:%f\n", obstacle_ele, obstacle_restrict_ele);
+            // d_map_clean[i] = obstacle_restrict_ele;
             if(obstacle_ele - 3 * sqrt(map_variance[i])> obstacle_restrict_ele)
                 map_elevation[i] = -10;
         }
@@ -912,10 +893,10 @@ __global__ void G_Raytracing()
 bool getIndexShiftFromPositionShift(int *indexShift,
     float *positionShift, float resolution)
 {
-    
     for (int i = 0; i < 2; i++) {
         indexShift[i] = static_cast<int>(positionShift[i] / resolution + 0.5 * (positionShift[i] > 0 ? 1 : -1));
     }
+    // Debug
     // std::cout << "indexShift1:" << indexShift[0]<< "   indexShift2:" << indexShift[1]<< std::endl;
     return true;
 }
@@ -923,17 +904,14 @@ bool getIndexShiftFromPositionShift(int *indexShift,
 bool getPositionShiftFromIndexShift(float *positionShift,
     int *indexShift, float resolution)
 {
-    // std::cout << "111" << std::endl;
-    // std::cout << indexShift[0] << std::endl;
     for(int i = 0; i < 2; i++)
     { 
         positionShift[i] = (float)indexShift[i] * resolution;
-        
     }
+    // Debug
     // std::cout << "positionShift1:" << positionShift[0]<<" positionShift2：" << positionShift[1]<< std::endl;
     return true;
 }
-
 
 int IndexToRange(int index,int Length)
 {
@@ -941,7 +919,6 @@ int IndexToRange(int index,int Length)
     index = index % Length;
     return index;
 }
-
 
 void Clear_regionrow(int Start_x, int Shift_x, int length)
 {
@@ -1013,7 +990,6 @@ void Init_GPU_elevationmap(int length, float resolution, float h_mahalanobisDist
         fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
         //goto Error;
     }
-
     //cudaDeviceSynchronize();
 } 
 
@@ -1041,16 +1017,15 @@ void Move(float *current_Position, float resolution, int length, float *Central_
     positionShift[0] = current_Position[0] - h_central_coordinate[0];
     positionShift[1] = current_Position[1] - h_central_coordinate[1];
 
-
-    //std::cout << "start_indicex:" <<h_start_indice[0] <<"   2:" <<h_start_indice[1]<<std::endl;
+    // Debug
+    // std::cout << "start_indicex:" <<h_start_indice[0] <<"   2:" <<h_start_indice[1]<<std::endl;
     // std::cout << "current_x:" <<current_Position[0] <<"   2:" <<current_Position[1]<<std::endl;
-    //std::cout << "later_x:" <<h_central_coordinate[0] <<"   2:" <<h_central_coordinate[1]<<std::endl;
+    // std::cout << "later_x:" <<h_central_coordinate[0] <<"   2:" <<h_central_coordinate[1]<<std::endl;
     // std::cout << "position_shift 1:" <<positionShift[0] <<"   2:" <<positionShift[1]<<std::endl;
 
     getIndexShiftFromPositionShift(indexShift, positionShift, resolution);
     // float alignedPositionShift[2];
     getPositionShiftFromIndexShift(alignedPositionShift, indexShift, resolution);
-  
     
     for(int i = 0; i < 2; i++)
     {
@@ -1069,7 +1044,6 @@ void Move(float *current_Position, float resolution, int length, float *Central_
                 int nCells = abs(indexShift[i]);
                 int index = (sign < 0 ? startIndex : endIndex);
                 index = IndexToRange(index, length);
-                // std::cout << "!!!!!!!!!!!!!!index:" << index << std::endl;
                 if(index + nCells <= length){
                     if(i == 0)
                         Clear_regionrow(index, nCells, length);
@@ -1097,34 +1071,14 @@ void Move(float *current_Position, float resolution, int length, float *Central_
         h_start_indice[i] = IndexToRange(h_start_indice[i], length);
         h_central_coordinate[i] = PositionToRange(h_central_coordinate[i], alignedPositionShift[i], resolution);
     }   
-
-    // std::cout << "h_start_indice 1:" <<h_start_indice[0] <<"   2:" <<h_start_indice[1]<<std::endl;
-    // std::cout << "h_central_coordinate 1:" <<h_central_coordinate[0] <<"   2:" <<h_central_coordinate[1]<<std::endl;
-    // std::cout << std::endl;
    
     cudaMemcpyToSymbol(start_indice, &h_start_indice, sizeof(int) * 2);
     cudaMemcpyToSymbol(central_coordinate, &h_central_coordinate, sizeof(float) * 2);
     
-    /*
-    float init_centralcoordinate[2] = {0, 0};
-    int init_startindice[2] = {0, 0};
-    cudaMemcpyToSymbol(central_coordinate, init_centralcoordinate, 2*sizeof(float));
-
-    cudaError_t cudaStatus = cudaMemcpyToSymbol(start_indice, init_startindice, 2*sizeof(int));
-    //G_Printf_map<<<1, 1>>>();
-
-    if (cudaStatus != cudaSuccess) 
-    {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        //goto Error;
-    }
-
-    */
     Central_coordinate[0] = h_central_coordinate[0];
     Central_coordinate[1] = h_central_coordinate[1];
     Start_indice[0] = h_start_indice[0];
     Start_indice[1] = h_start_indice[1];
-    
     //cudaDeviceSynchronize();
 }
 
@@ -1189,7 +1143,6 @@ int Process_points(int *map_index, float *point_x, float *point_y, float *point_
 	return 0;
 }
 
-
 void Mapvar_update(int length, float var_update)
 {
     int cell_num = length * length;
@@ -1200,7 +1153,6 @@ void Mapvar_update(int length, float var_update)
 
 void Fuse(int length, int point_num, int *point_index, int *point_colorR, int *point_colorG, int *point_colorB, float *point_intensity, float *point_height, float *point_var)
 {
-    //raw_cells *d_points;
     int *dev_pointindex;
     float *dev_pointheight;
     float *dev_pointvar;
@@ -1245,7 +1197,6 @@ __global__ void G_update_mapheight(float height_update)
     int i = blockDim.x * blockIdx.x + threadIdx.x; 
 	if (i < Length * Length && map_elevation[i] != -10) {
         map_elevation[i] += height_update;    
-        //printf("%f ", map_elevation[i]);
     }
   
 }
@@ -1275,6 +1226,7 @@ void Map_optmove(float *opt_p, float height_update, float resolution,  int lengt
     int blocksPerGrid =(length * length + threadsPerBlock - 1) / threadsPerBlock; 
 
     G_update_mapheight<<<blocksPerGrid, threadsPerBlock>>>(height_update);
+    // Debug
     // std::cout << "last:" << last_p[0] << "," << last_p[1] << std::endl;
     // std::cout << "last:" << opt_p[0] << "," << opt_p[1] << std::endl;
     // std::cout << "opt_alignedPosition:" << opt_alignedPosition[0] << "," << opt_alignedPosition[1] << std::endl;
@@ -1300,7 +1252,6 @@ void Map_closeloop(float *update_position, float height_update, int length, floa
     int blocksPerGrid =(cell_num + threadsPerBlock - 1) / threadsPerBlock; 
     G_update_mapheight<<<blocksPerGrid, threadsPerBlock>>>(height_update);
 }
-
 
 void Map_feature(int length, float *elevation, float *var, int *colorR, int *colorG, int *colorB, float *rough, float *slope, float *traver, float *intensity)
 {
@@ -1328,7 +1279,6 @@ void Map_feature(int length, float *elevation, float *var, int *colorR, int *col
 	int threadsPerBlock = 256; 
 	int blocksPerGrid =(cell_num + threadsPerBlock - 1) / threadsPerBlock; 
     G_Mapfeature<<<blocksPerGrid, threadsPerBlock>>>(d_colorR, d_colorG, d_colorB, d_elevation, d_var, d_rough, d_slope, d_traver, d_intensity); 
-    //G_Clear_points<<<blocksPerGrid, threadsPerBlock>>>();
 
     cudaMemcpy(colorR, d_colorR, cell_num * sizeof(int), cudaMemcpyDeviceToHost); 
     cudaMemcpy(colorG, d_colorG, cell_num * sizeof(int), cudaMemcpyDeviceToHost); 
@@ -1353,7 +1303,6 @@ void Map_feature(int length, float *elevation, float *var, int *colorR, int *col
 
 void Raytracing(int length)
 {
-    
     int cell_num = length * length;
 	int threadsPerBlock = 256; 
     int blocksPerGrid =(cell_num + threadsPerBlock - 1) / threadsPerBlock; 
@@ -1366,6 +1315,5 @@ void Raytracing(int length)
         fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
         //goto Error;
     }
-
 }
 

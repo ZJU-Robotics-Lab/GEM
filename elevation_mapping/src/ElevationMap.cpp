@@ -38,11 +38,11 @@ using namespace grid_map;
 
 namespace elevation_mapping {
 
-ElevationMap::ElevationMap(ros::NodeHandle nodeHandle)
+ElevationMap::ElevationMap(ros::NodeHandle nodeHandle, string robot_name)
     : nodeHandle_(nodeHandle),
       rawMap_({"elevation", "min_height", "height", "variance", "horizontal_variance_x", "horizontal_variance_y", "horizontal_variance_xy", "color", "timestamp", "time", "lowest_scan_point", "sensor_x_at_lowest_scan", "sensor_y_at_lowest_scan", "sensor_z_at_lowest_scan"}),
       visualMap_({"elevation", "variance", "rough", "slope", "traver", "color_r", "color_g", "color_b", "intensity"}),
-     
+      robot_name_(robot_name),
       hasUnderlyingMap_(false),
       visibilityCleanupDuration_(0.0)
 {
@@ -51,20 +51,19 @@ ElevationMap::ElevationMap(ros::NodeHandle nodeHandle)
   visualMap_.setBasicLayers({"elevation"});
 
   nodeHandle_.param("orthomosaic_saving_dir", orthoDir, string("/home/mav-lav/Datasets/zjg_image/"));
-  
+
   clear();
 
-  visualMapPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("visual_map", 1);
-  elevationMapRawPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("elevation_map_raw", 1);
-  VpointsPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("visualpoints",1);
-  orthomosaicPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>("orthomosaic", 1);
+  visualMapPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/visual_map", 1);
+  elevationMapRawPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/elevation_map_raw", 1);
+  VpointsPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/visualpoints",1);
+  orthomosaicPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>("/" + robot_name + "/orthomosaic", 1);
   initialTime_ = ros::Time::now();
 }
 
 ElevationMap::~ElevationMap()
 {
 }
-
 
 void ElevationMap::setGeometry(const grid_map::Length& length, const double& resolution, const grid_map::Position& position)
 {
@@ -74,8 +73,7 @@ void ElevationMap::setGeometry(const grid_map::Length& length, const double& res
 }
 
 
-// Visualization of map
-void ElevationMap::show(ros::Time timeStamp, string robot_name, float trackPointTransformed_x, float trackPointTransformed_y, int length, float *elevation, float *var, int *point_colorR, int *point_colorG, int *point_colorB, float *rough, float *slope, float *traver, float* intensity)
+sensor_msgs::ImagePtr ElevationMap::show(ros::Time timeStamp, string robot_name, float trackPointTransformed_x, float trackPointTransformed_y, int length, float *elevation, float *var, int *point_colorR, int *point_colorG, int *point_colorB, float *rough, float *slope, float *traver, float* intensity)
 {
   cv::Mat image(length, length, CV_8UC3, cv::Scalar(0,0,0));
 
@@ -145,8 +143,8 @@ void ElevationMap::show(ros::Time timeStamp, string robot_name, float trackPoint
   grid_map_msgs::GridMap message;
   GridMapRosConverter::toMessage(visualMap_, message);
   visualMapPublisher_.publish(message);
+  return msg;
 }
-
 
 bool ElevationMap::clear()
 {
@@ -156,7 +154,6 @@ bool ElevationMap::clear()
   visualMap_.resetTimestamp();
   return true;
 }
-
 
 void ElevationMap::opt_move(Position M_position, float update_height)
 {
@@ -170,7 +167,6 @@ void ElevationMap::opt_move(Position M_position, float update_height)
   }
 }
 
-
 void ElevationMap::move(const Index M_startindex, Position M_position)
 {
   visualMap_.setStartIndex(M_startindex);
@@ -178,24 +174,20 @@ void ElevationMap::move(const Index M_startindex, Position M_position)
   
 }
 
-
 grid_map::GridMap& ElevationMap::getRawGridMap()
 {
   return rawMap_;
 }
-
 
 ros::Time ElevationMap::getTimeOfLastUpdate()
 {
   return ros::Time().fromNSec(rawMap_.getTimestamp());
 }
 
-
 const kindr::HomTransformQuatD& ElevationMap::getPose()
 {
   return pose_;
 }
-
 
 void ElevationMap::setFrameId(const std::string& frameId)
 {
@@ -203,10 +195,10 @@ void ElevationMap::setFrameId(const std::string& frameId)
   visualMap_.setFrameId(frameId);
 }
 
-
 const std::string& ElevationMap::getFrameId()
 {
   return rawMap_.getFrameId();
 }
+
 
 } /* namespace */

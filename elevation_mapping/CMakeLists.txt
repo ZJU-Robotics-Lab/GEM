@@ -4,7 +4,7 @@ project(elevation_mapping)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 ## Find catkin macros and libraries
-#find_package(PCL REQUIRED)
+find_package(PCL REQUIRED)
 FIND_PACKAGE(OpenCV REQUIRED )
 
 find_package(catkin REQUIRED COMPONENTS
@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   grid_map_ros
   grid_map_msgs
   pcl_ros
+  pcl_conversions
   roscpp
   message_filters
   sensor_msgs
@@ -28,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
+find_package(octomap REQUIRED)
 
 ###################################
 ## catkin specific configuration ##
@@ -59,6 +61,7 @@ catkin_package(
     eigen_conversions
     kindr
     kindr_ros
+    pcl_ros
   DEPENDS
     Boost
 )
@@ -73,7 +76,9 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -88,16 +93,16 @@ add_library(${PROJECT_NAME}_library
   src/sensor_processors/PerfectSensorProcessor.cpp
 )
 
-
+link_directories(${PCL_LIBRARY_DIRS})
 
 add_subdirectory(cuda)
 set (EXTRA_LIBS ${EXTRA_LIBS} gpu)
 
-target_link_libraries (${PROJECT_NAME}_library ${EXTRA_LIBS})
+target_link_libraries (${PROJECT_NAME}_library ${EXTRA_LIBS}  ${PCL_LIBRARIES})
 
 
 target_link_libraries(${PROJECT_NAME}_library
-  ${catkin_LIBRARIES}  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}  ${OpenCV_LIBS} ${OCTOMAP_LIBRARIES}
 )
 
 ## Declare a cpp executable
@@ -114,16 +119,16 @@ target_link_libraries(${PROJECT_NAME}
 ## Install ##
 #############
 
-install(TARGETS ${PROJECT_NAME}_library ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# install(TARGETS ${PROJECT_NAME}_library ${PROJECT_NAME}
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+# )
 
-install(DIRECTORY config
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+# install(DIRECTORY config
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )

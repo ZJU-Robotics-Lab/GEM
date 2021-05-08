@@ -1,10 +1,11 @@
 /*
  * SensorProcessorBase.cpp
  *
- *  Created on: Nov 22, 2019
- *      Author: Peter XU
- *	 Institute: ZJU, CSC 104
+ *  Created on: Jun 6, 2014
+ *      Author: Péter Fankhauser, Hannes Keller
+ *   Institute: ETH Zurich, ANYbotics
  */
+
 #include <elevation_mapping/sensor_processors/SensorProcessorBase.hpp>
 
 //PCL
@@ -100,9 +101,9 @@ bool SensorProcessorBase::updateTransformations(const ros::Time& timeStamp)
     
     tf::StampedTransform transformTf;
     // transformListener_.lookupTransform(mapFrameId_, sensorFrameId_, ros::Time(0), transformTf);
-    transformListener_.lookupTransform(mapFrameId_, sensorFrameId_, ros::Time(0), M2StransformTf);
+    transformListener_.lookupTransform(mapFrameId_, sensorFrameId_, ros::Time(0), M2StransformTf);  // ros::Time(0)
     poseTFToEigen(M2StransformTf, transformationSensorToMap_);
-   
+    
     // transformListener_.lookupTransform(robotBaseFrameId_, sensorFrameId_, ros::Time(0), transformTf);  // TODO Why wrong direction?
     transformListener_.lookupTransform(robotBaseFrameId_, sensorFrameId_, ros::Time(0), transformTf);  // TODO Why wrong direction?
     Eigen::Affine3d transform;
@@ -164,7 +165,7 @@ bool SensorProcessorBase::GPUPointCloudprocess(
     point_colorR[i] = point.r;
     point_colorG[i] = point.g;
     point_colorB[i] = point.b;
-    point_intensity[i] = point.i;
+    point_intensity[i] = point.intensity;
 	} 
 
   Eigen::Affine3d transform;

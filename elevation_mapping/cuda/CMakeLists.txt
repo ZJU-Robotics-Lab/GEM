@@ -1,6 +1,6 @@
 project(gpu) # required cmake version 
 cmake_minimum_required(VERSION 2.8) # packages 
-find_package(CUDA) 
+find_package(CUDA REQUIRED) 
 find_package(Eigen3 REQUIRED)
 find_package(kindr)
 

@@ -34,6 +34,8 @@
 #include <ros/ros.h>
 #include <string>
 
+using namespace std;
+
 namespace elevation_mapping {
 // typedef PointXYZRGBIC Anypoint;
 // typedef pcl::PointCloud<Anypoint> pointCloud;
@@ -48,7 +50,7 @@ class ElevationMap
   /*!
    * Constructor.
    */
-  ElevationMap(ros::NodeHandle nodeHandle);
+  ElevationMap(ros::NodeHandle nodeHandle, string robot_name);
 
   /*!
    * Destructor.
@@ -151,7 +153,7 @@ class ElevationMap
    */
   bool readParameters();
 
-  void show(ros::Time timestamp, std::string robot_name, float trackPointTransformed_x, float trackPointTransformed_y, int length, float *elevation, float *var, int *point_colorR, int *point_colorG, int *point_colorB, float *rough, float *slope, float *traver, float *intensity);
+  sensor_msgs::ImagePtr show(ros::Time timestamp, std::string robot_name, float trackPointTransformed_x, float trackPointTransformed_y, int length, float *elevation, float *var, int *point_colorR, int *point_colorG, int *point_colorB, float *rough, float *slope, float *traver, float *intensity);
 
   //! ROS nodehandle.
   ros::NodeHandle nodeHandle_;
@@ -184,6 +186,8 @@ class ElevationMap
   ros::Publisher orthomosaicPublisher_;
 
   std::string orthoDir;
+  string robot_id;
+  string robot_name_;
 
   //! Parameters. Are set through the ElevationMapping class.
   double minVariance_;
