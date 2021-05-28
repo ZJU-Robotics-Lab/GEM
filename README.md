@@ -72,6 +72,8 @@ In order to install the GEM, clone the latest version from this repository into 
 
     cd catkin_workspace/src
     git clone https://github.com/ZJU-Robotics-Lab/GEM.git
+    git clone https://github.com/ZJU-Robotics-Lab/slam_msg.git
+    git clone https://github.com/ANYbotics/kindr_ros.git
     cd ../
     catkin_make
 
@@ -80,6 +82,7 @@ In order to install the GEM, clone the latest version from this repository into 
 
 In order to get the GEM to run with your robot, you will need to adapt a few parameters. It is the easiest if duplicate and adapt all the parameter files that you need to change from the `elevation_mapping_demos` package (e.g. the `simple_demo` example). These are specifically the parameter files in `config` and the launch file from the `launch` folder.
 
+    roslaunch elevation_mapping_demos simple_demo.launch
 
 ## Nodes
 

@@ -7,8 +7,8 @@
   <arg name="lidar_topic"  default="/$(arg robot_name)/pointcloud"/>
 
   <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping_$(arg robot_id)" output="screen">
-    <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/detection_$(arg robot_name).yaml" />
-    <rosparam command="load" file="$(find elevation_mapping_demos)/config/elevation_maps/detection_$(arg robot_name).yaml" />
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/robots/detection.yaml" />
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/elevation_maps/detection.yaml" />
     <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/velodyne_VLP16.yaml" />
     <!-- <remap from="/voxel_grid/output" to="$(arg lidar_topic)"/> -->
     <remap from="/stereo_grey/left/image_raw" to="$(arg camera_topic)"/>
