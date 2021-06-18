@@ -84,6 +84,14 @@ In order to get the GEM to run with your robot, you will need to adapt a few par
 
     roslaunch elevation_mapping_demos simple_demo.launch
 
+## Simple Demo
+
+You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZnAVSpL0T6GZkJQ14Ptm4w_1ALc/view?usp=sharing
+
+    rosbag play test.bag --clock --pause
+    roslaunch elevation_mapping_demos simple_demo.launch
+
+
 ## Nodes
 
 ### Node: elevation_mapping

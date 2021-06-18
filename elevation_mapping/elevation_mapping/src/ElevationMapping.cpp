@@ -61,8 +61,8 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
       robotMotionMapUpdater_(nodeHandle),
       isContinouslyFusing_(false),
       ignoreRobotMotionUpdates_(false),
-      vel_sub(nodeHandle, "/robot0/pointcloud", 1),
-      cameraR_sub(nodeHandle, "/robot0/image_rect", 1),
+      vel_sub(nodeHandle, "/voxel_grid/output", 1),
+      cameraR_sub(nodeHandle, "/stereo_grey/left/image_raw", 1),
       sync(MySyncPolicy(10), vel_sub, cameraR_sub)
 {
   ROS_INFO("Elevation mapping node started.");
