@@ -1,0 +1,11 @@
+map_saving_file: "./test.pcd"
+point_cloud_topic: "/robot0/pointcloud"
+sensor_frame_id: "PandarQT"
+map_frame_id: "/robot0/map"
+robot_base_frame_id: "PandarQT"
+robot_pose_with_covariance_topic: "/laser_pose"
+robot_pose_cache_size: 200
+track_point_frame_id: "PandarQT"
+track_point_x: 0.0
+track_point_y: 0.0
+track_point_z: 0.0

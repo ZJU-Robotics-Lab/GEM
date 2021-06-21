@@ -1,4 +1,4 @@
-## GEM: Online Globally consistent dense elevation mapping for unstructured terrain
+## GEM: Online Globally consistent dense elevation mapping for unstructured terrain (lidar-only)
 
 This is a [ROS] package developed for elevation mapping with a mobile robot which is modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
 
@@ -12,7 +12,7 @@ Maintainer: Peter XU, xuechengxu@zju.edu.cn<br />**
 
 This project was developed at Zhejiang University (Robotics Lab, College of Control Science and Engineering).
 
-<img alt="Elevation Map Example" src="elevation_mapping_demos/doc/cross_road.png" width="700">
+<img alt="Elevation Map Example" src="elevation_mapping_demos/doc/lidar-only.png" width="700">
 
 ## Loop Performance (Loop version is coming soon)
 <img alt="Elevation Map before loop" src="elevation_mapping_demos/doc/before_loop.png" width="700">
@@ -112,40 +112,20 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 
 #### Published Topics
 
-* **`submap`** ([sensor_msgs/PointCloud2])
-
-    The previous submap point cloud for visualization.
-
 * **`history_pointcloud`** ([sensor_msgs/PointCloud2])
 
     The history pointcloud for visualization.
+    
+* **visualpoints** ([sensor_msgs/PointCloud2])
+
+    The local pointcloud for visualization.
 
 
 #### Parameters
 
-* **`robot_id`** (string, default: "0")
-
-    The id of the robot (for multi-robot).
-
-* **`robot_name`** (string, default: "robot0")
-
-    The name of the robot (for multi-robot).
-
 * **`map_saving_file`** (string, default: "./map.pcd")
 
     The filename of saving map pcd.
-
-* **`submap_saving_dir`** (string, default: "./submaps/")
-
-    The directory of saving submaps.
-
-* **`camera_params_yaml`** (string, default: "./params.yaml")
-
-    The filename of camera parameters.
-
-* **`orthomosaic_saving_dir`** (string, default: "./image/")
-
-    The directory of saving orthomosaic image.
 
 * **`base_frame_id`** (string, default: "/robot")
 
@@ -236,11 +216,6 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
     The data for the sensor noise model.
 
 
-## NEW FEATURES
-
-**1. Multi-resolution map representation implemented with octomap**
-
-**2. Submap point cloud upsample implemented by mls api in PCL**
 
 
 ## Bugs & Feature Requests
