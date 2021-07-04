@@ -1,0 +1,14 @@
+global_costmap:
+  global_frame: /robot0/map
+  robot_base_frame: /PandarQT
+  update_frequency: 5
+  publish_frequency: 5
+  width: 200.0
+  height: 200.0
+  origin_x: -100.0
+  origin_y: -100.0
+  resolution: 0.2
+  static_map: false
+  rolling_window: false
+  
+  
