@@ -90,6 +90,8 @@ You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZ
 
     rosbag play test.bag --clock --pause
     roslaunch elevation_mapping_demos simple_demo.launch
+    (optional - if use costmap)
+    roslaunch roslaunch pointMap_layer create_globalmap.launch 
 
 
 ## Nodes
@@ -119,6 +121,14 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 * **`history_pointcloud`** ([sensor_msgs/PointCloud2])
 
     The history pointcloud for visualization.
+    
+* **`/move_base/global_costmap/costmap`** ([nav_msgs/OccupancyGrid])
+
+    The global costmap for exploration.
+
+* **`/move_base/local_costmap/costmap`** ([nav_msgs/OccupancyGrid])
+
+    The local costmap for local planning.
 
 
 #### Parameters
@@ -241,6 +251,10 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 **1. Multi-resolution map representation implemented with octomap**
 
 **2. Submap point cloud upsample implemented by mls api in PCL**
+
+**3. Add costmap api for exploration tasks**
+
+
 
 
 ## Bugs & Feature Requests
