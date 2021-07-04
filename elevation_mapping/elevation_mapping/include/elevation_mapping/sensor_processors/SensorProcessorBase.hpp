@@ -11,6 +11,7 @@
 #include "elevation_mapping/PointXYZRGBCE.hpp"
 #include "elevation_mapping/PointXYZRGBC.hpp"
 #include "elevation_mapping/PointXYZRGBIC.hpp"
+#include "elevation_mapping/PointXYZRGBICO.hpp"
 
 // ROS
 #include <ros/ros.h>
@@ -32,7 +33,7 @@
 #include <memory>
 
 namespace elevation_mapping {
-typedef PointXYZRGBIC Anypoint;
+typedef PointXYZRGBICO Anypoint;
 typedef pcl::PointCloud<Anypoint> pointCloud;
 
 /*!

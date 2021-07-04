@@ -427,6 +427,7 @@ void ElevationMapping::savingMap()
     pt.r = visualCloud_.points[i].r;
     pt.g = visualCloud_.points[i].g;
     pt.b = visualCloud_.points[i].b;
+    pt.obstacle = visualCloud_.points[i].obstacle;
     pt.intensity = visualCloud_.points[i].intensity;
     pt.covariance = visualCloud_.points[i].covariance;
     out_color.push_back(pt);
@@ -685,7 +686,7 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
             
             GridPoint save_pos(position.x(), position.y());
             GridPointData save_data(prevMap_.at("elevation", *iterator), prevMap_.at("variance", *iterator), prevMap_.at("color_r", *iterator), 
-                                    prevMap_.at("color_g", *iterator), prevMap_.at("color_b", *iterator), prevMap_.at("intensity", *iterator));
+                                    prevMap_.at("color_g", *iterator), prevMap_.at("color_b", *iterator), prevMap_.at("intensity", *iterator), prevMap_.at("traver", *iterator));
             
             // Update the grid information within local map
             auto got = localMap_.find(save_pos);
@@ -705,6 +706,7 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
             pt.r = prevMap_.at("color_r", *iterator);
             pt.g = prevMap_.at("color_g", *iterator);
             pt.b = prevMap_.at("color_b", *iterator);
+            pt.obstacle = prevMap_.at("traver", *iterator);
             pt.intensity = prevMap_.at("intensity", *iterator);
             pt.covariance = prevMap_.at("variance", *iterator);
             visualCloud_.push_back(pt);
@@ -1020,7 +1022,7 @@ void ElevationMapping::pointCloudtoHash(pointCloud localPointCloud, umap& out)
     round_z = localPointCloud.points[i].z;
 
     GridPoint save_pos(round_x, round_y);
-    GridPointData save_data(round_z, localPointCloud.points[i].covariance, localPointCloud.points[i].r, localPointCloud.points[i].g, localPointCloud.points[i].b, localPointCloud.points[i].intensity);
+    GridPointData save_data(round_z, localPointCloud.points[i].covariance, localPointCloud.points[i].r, localPointCloud.points[i].g, localPointCloud.points[i].b, localPointCloud.points[i].intensity, localPointCloud.points[i].obstacle);
     out.insert(make_pair(save_pos, save_data));
   }
 }
