@@ -228,6 +228,7 @@ bool ElevationMapping::initialize()
   denseSubmap = false;
   newLocalMapFlag = 1;
   JumpOdomFlag = 0;
+  JumpFlag = 0;
   initFlag = 1;
   ROS_INFO("Done.");
   
