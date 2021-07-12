@@ -93,6 +93,9 @@ You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZ
     (optional - if use costmap)
     roslaunch roslaunch pointMap_layer create_globalmap.launch 
 
+## !!! An Important Thing
+
+With different sensor configurations of coordination, you may change the filter line in cuda/gpu_process.cu https://github.com/ZJU-Robotics-Lab/GEM/blob/997d31b3b076076f26e72276fe83a43836d29331/elevation_mapping/elevation_mapping/cuda/gpu_process.cu#L393. The demo is recorded with PandarQT with x axis point to left and y axis point to back. In lidar with camera branch, we only use the point cloud in front of the robot.
 
 ## Nodes
 
