@@ -390,7 +390,7 @@ __global__ void G_pointsprocess(int* map_index, float *point_x, float *point_y, 
 		
 		int flag = 0;
         // !!! IMPORTANT FILTER PARAMETERS
-		if((point_x[i] > -1.5 && point_x[i] < 1.5 && point_y[i] > -1.5 && point_y[i] < 1.5) || (point_y[i] > -1 && point_y[i] < 1))
+		if((point_x[i] > -1.5 && point_x[i] < 1.5 && point_y[i] > -1.5 && point_y[i] < 1.5) || (point_y[i] > -1 && point_y[i] < 1) || point_y[i] > 0)
 		{
 			flag = 1;
 		}
