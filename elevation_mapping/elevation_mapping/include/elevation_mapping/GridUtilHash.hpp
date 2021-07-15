@@ -28,13 +28,13 @@ struct GridPoint{
 
 struct GridPointData{
     float var;
-    float obstacle;
+    float travers;
     float elevation;
     float intensity;
     int r;
     int g;
     int b;
-    GridPointData(float ele_, float var_, int r_, int g_, int b_, float intensity_, float obstacle_):elevation(ele_), var(var_),r(r_),g(g_),b(b_),intensity(intensity_),obstacle(obstacle_){}
+    GridPointData(float ele_, float var_, int r_, int g_, int b_, float intensity_, float travers_):elevation(ele_), var(var_),r(r_),g(g_),b(b_),intensity(intensity_),travers(travers_){}
 };
 
 struct GridPointHashFunc{
