@@ -11,7 +11,7 @@
 // PCL
 #include <pcl/PCLPointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pointMap_layer/PointXYZRGBICO.hpp>
+#include <pointMap_layer/PointXYZRGBICT.hpp>
 
 
 using namespace pcl;
@@ -19,7 +19,7 @@ using namespace pcl;
 namespace costmap_2d
 {
 
-typedef PointXYZRGBICO Anypoint;
+typedef PointXYZRGBICT Anypoint;
 typedef pcl::PointCloud<Anypoint> pointCloud;
 
 class PointMapLayer : public ObstacleLayer
