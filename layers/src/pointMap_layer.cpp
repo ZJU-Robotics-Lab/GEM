@@ -69,7 +69,7 @@ void PointMapLayer::updateBounds(double robot_x, double robot_y, double robot_ya
         unsigned int index = getIndex(mx, my);
 
         // directly update costmap using obstacle value given by GEM
-        if(point.obstacle > 0.1){
+        if(point.travers > 0.1){
             costmap_[index] = FREE_SPACE;
         }else{
             costmap_[index] = LETHAL_OBSTACLE;
