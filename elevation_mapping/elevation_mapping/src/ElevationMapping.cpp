@@ -74,7 +74,7 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   pointMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/history_point", 1);
   subMapPublisher_ = nodeHandle_.advertise<dislam_msgs::SubMap>("/" + robot_name + "/submap", 1);
   globalMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/global_point", 1);
-  lastmapPublisher_ =  nodeHandle_.advertise<grid_map_msgs::GridMap>("opt_map", 1);
+  lastmapPublisher_ =  nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/opt_map", 1);
   keyFramePCPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/keyframe_pc", 1);
   octomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>("/" + robot_name + "/local_octomap", 1);
   globalOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>("/" + robot_name + "/global_octomap", 1);
@@ -101,6 +101,8 @@ void ElevationMapping::Run()
   // subscriber for map saving api
   denseSubmapSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/dense_mapping", 1, &ElevationMapping::denseMappingSignal, this);
   savingSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/map_saving", 1, &ElevationMapping::mapSavingSignal, this);
+  optKeyframeSub_ = nodeHandle_.subscribe("/" + robot_name + "/opt_keyframes", 1, &ElevationMapping::optKeyframeCallback, this);
+  keyFrameSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/new_keyframe", 1, &ElevationMapping::newKeyframeSignal, this);
 }
 
 
@@ -226,10 +228,12 @@ bool ElevationMapping::initialize()
   octoTree = new octomap::ColorOcTree(octoResolution_);
   globalOctoTree = new octomap::ColorOcTree(octoResolution_);  
   denseSubmap = false;
-  newLocalMapFlag = 1;
+  newLocalMapFlag = 0;
   JumpOdomFlag = 0;
+  JumpCount = 0;
   JumpFlag = 0;
   initFlag = 1;
+  optFlag = 0;
   ROS_INFO("Done.");
   
   return true;
@@ -371,14 +375,14 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
 
   ROS_INFO("ElevationMap received a point cloud (%i points) for elevation mapping.", static_cast<int>(pointCloud->size()));
   sensorProcessor_->updateTransformations(timeStamp);
-  updatepointsMapLocation();
+  updatepointsMapLocation(timeStamp);
   updateMapLocation();
 
   // thread for process
-  std::thread t1(&ElevationMapping::processpoints, this, pointCloud);
-  std::thread t2(&ElevationMapping::processmapcells, this);
-  t1.join();
-  t2.join();  
+  std::thread processPointThread(&ElevationMapping::processpoints, this, pointCloud);
+  std::thread processMapCellThread(&ElevationMapping::processmapcells, this);
+  processPointThread.join();
+  processMapCellThread.join();  
 
   // point cloud attributes 
   float elevation[length_ * length_];
@@ -399,8 +403,8 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
 
   // update local map and visual the local point cloud
   updateLocalMap(rawPointCloud);
-  visualPointMap();
-  visualOctomap();
+  // visualPointMap();
+  // visualOctomap();
   
   // raytracing for obstacle removal
   Raytracing(length_);
@@ -465,7 +469,7 @@ void ElevationMapping::savingSubMap()
  */
 void ElevationMapping::composingGlobalMap()
 {
-  ROS_INFO("composingGlobalMap");
+  // ROS_INFO("composingGlobalMap");
   if(globalMap_.size() > 1){
     pointCloud cloudpt;
 
@@ -483,8 +487,7 @@ void ElevationMapping::composingGlobalMap()
     octomap_msgs::fullMapToMsg(*globalOctoTree, octomsg);
     octomsg.header.frame_id = "/" + robot_name + "/map";
     octomsg.resolution = globalOctoTree->getResolution();  
-    globalOctomapPublisher_.publish(octomsg);
-    
+    globalOctomapPublisher_.publish(octomsg); 
   }
 }
 
@@ -494,10 +497,16 @@ void ElevationMapping::composingGlobalMap()
  */
 void ElevationMapping::visualPointMap()
 {
-  sensor_msgs::PointCloud2 output;
-  pcl::toROSMsg(visualCloud_, output);
-  output.header.frame_id = "/" + robot_name + "/map";
-  pointMapPublisher_.publish(output);
+  ros::Rate r(10);
+	while(ros::ok()){
+    if(!optFlag){
+      sensor_msgs::PointCloud2 output;
+      pcl::toROSMsg(visualCloud_, output);
+      output.header.frame_id = "/" + robot_name + "/map";
+      pointMapPublisher_.publish(output);
+    }
+    r.sleep();
+  }
 }
 
 
@@ -542,13 +551,44 @@ void ElevationMapping::denseMappingSignal(const std_msgs::Bool::ConstPtr& denseS
 
 
 /*
+ * Loop closing signal callback
+ */
+void ElevationMapping::optKeyframeCallback(const slam_msg::Keyframes::ConstPtr& optKeyFrame)
+{
+  optFlag = 1;
+  JumpOdomFlag = 1;
+  optGlobalMapLoc_.clear();
+
+  // Save the opt transform matrix
+  for(int i = 0; i < optKeyFrame->keyframes.size(); i++){
+    int optId = optKeyFrame->keyframes[i].id;
+    Eigen::Quaternionf q(optKeyFrame->keyframes[i].rotation[3], optKeyFrame->keyframes[i].rotation[0], optKeyFrame->keyframes[i].rotation[1], optKeyFrame->keyframes[i].rotation[2]);
+    Eigen::Isometry3f T(q);
+    T.pretranslate(Eigen::Vector3f(optKeyFrame->keyframes[i].position[0], optKeyFrame->keyframes[i].position[1], optKeyFrame->keyframes[i].position[2]));
+    optGlobalMapLoc_.push_back(T);
+  }
+  optKeyframeNum = optGlobalMapLoc_.size();
+  ROS_WARN("Start optimizing global map with submap num %d", optKeyframeNum);
+}
+
+
+/*
+ * New keyframe signal callback
+ */
+void ElevationMapping::newKeyframeSignal(const nav_msgs::Odometry::ConstPtr& newKeyframeSignal)
+{
+  newLocalMapFlag = 1;
+  ROS_WARN("NEW KEYFRAME! x = %lf, y = %lf", newKeyframeSignal->twist.twist.linear.x, newKeyframeSignal->twist.twist.linear.y);
+}
+
+
+/*
  * Update local map and if the local map is full add it to global stack
  */
 void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& rawPointCloud)
 {
   int index, index_x, index_y;
   float delta_x, delta_y;
-  double t2;
 
   float current_x = current_position[0];
   float current_y = current_position[1];
@@ -556,35 +596,12 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
   delta_x = position_shift[0];
   delta_y = position_shift[1];
 
-  // get tf
-  tf::StampedTransform trackPoseTransformed_;
-  try{
-    transformListener_.lookupTransform("/" + robot_name + "/map", trackPointFrameId_, ros::Time(0), trackPoseTransformed_);
-  }catch (tf::TransformException &ex) {
-    ROS_ERROR("%s",ex.what());
-    ros::Duration(1.0).sleep();
-  }
-
-  // check if a new local map is needed
-  if(initFlag == 0 && sqrt(pow((trackPoseTransformed_.getOrigin().x() - trajectory_.back().translation().x()),2) + pow((trackPoseTransformed_.getOrigin().y() - trajectory_.back().translation().y()),2)) >= localMapSize_){
-    newLocalMapFlag = 1;
-    keyFramePCPublisher_.publish(rawPointCloud);
-    ROS_WARN("NEW KEYFRAME ****************");
-  }
-  
-  // handle the odom jump
-  if(JumpFlag == 1){
-    pointCloud cloudUpdated;
-    pointCloud::Ptr updatedLocalMap;
-    localHashtoPointCloud(localMap_, updatedLocalMap);
-
-    Eigen::Isometry3f T = Eigen::Isometry3f::Identity();
-    T = optGlobalMapLoc_[globalMap_.size()] * trajectory_[globalMap_.size()].inverse();
-    Eigen::Matrix4f transformMatrix = T.matrix();
-    pcl::transformPointCloud(*updatedLocalMap, cloudUpdated, transformMatrix);  
-
-    visualCloud_ += cloudUpdated;
-  }
+  // Should adapt to the SLAM. Check if a new local map is needed
+  // if(initFlag == 0 && sqrt(pow((trackPoseTransformed_.getOrigin().x() - trajectory_.back().translation().x()),2) + pow((trackPoseTransformed_.getOrigin().y() - trajectory_.back().translation().y()),2)) >= localMapSize_){
+  //   newLocalMapFlag = 1;
+  //   keyFramePCPublisher_.publish(rawPointCloud);
+  //   ROS_WARN("NEW KEYFRAME ****************");
+  // }
 
   // main if for generate local map
   if(newLocalMapFlag == 1 && (JumpFlag == 1 || optFlag == 0)){// && JumpOdomFlag == 0){ // At the local_map's boundary
@@ -601,17 +618,24 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
       localMapCenter_.x = trajectory_.back().translation().x();
       localMapCenter_.y = trajectory_.back().translation().y();
       localMapLoc_.push_back(localMapCenter_);
-      pointCloud::Ptr out_pc;
+
+      // Debug only
+      ROS_WARN("newLocalMapFlag %d, Push new keyframe! x = %lf, y = %lf", newLocalMapFlag, trajectory_.back().translation().x(), trajectory_.back().translation().y());
+      
+      // Save local hash to point cloud
+      pointCloud::Ptr out_pc, grid_pc;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr dense_output;
 
-
       // Save local map into global map stack
+      gridMaptoPointCloud(map_.visualMap_, grid_pc);
       localHashtoPointCloud(localMap_, out_pc);
+
       if(denseSubmap)
         pointcloudinterpolation(out_pc);
+
       denseSubmap = false;
       unique_lock<mutex> lock(GlobalMapMutex_);
-      globalMap_.push_back(*out_pc);
+      globalMap_.push_back(*out_pc + *grid_pc);
       lock.unlock();
 
       // Publish submap
@@ -721,6 +745,144 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
 
 
 /*
+ * Update global map and if the loop is detected
+ */
+void ElevationMapping::updateGlobalMap()
+{
+  ros::Rate r(15);
+  ROS_WARN("UPDATE GLOBAL MAP");
+	while(ros::ok())
+	{
+		if(optFlag == 1){ // optimize global map with opt poses
+			double t1 = ros::Time::now ().toSec();
+      ROS_WARN("UPDATE GLOBAL MAP, %d", optKeyframeNum);
+      ROS_WARN("GLOBAL MAP SIZE, %d", globalMap_.size());
+
+      if(optKeyframeNum > globalMap_.size()){
+        optKeyframeNum = globalMap_.size();
+      }
+
+      visualCloud_.clear();
+      pointCloud cloudUpdated;
+
+      for(int i = 0; i < optKeyframeNum; i++){
+        Eigen::Isometry3f T = Eigen::Isometry3f::Identity();
+
+        if(i > 0){
+          T = optGlobalMapLoc_[i] * trajectory_[i].inverse();
+          Eigen::Matrix4f transformMatrix = T.matrix();
+
+          cout << "transformMatrix ***************" << endl << trajectory_[i].matrix() << endl;
+          cout << "optGlobalMapLoc_ ***************" << endl << optGlobalMapLoc_[i].matrix() << endl;
+        
+          pcl::transformPointCloud(globalMap_[i], cloudUpdated, transformMatrix);              
+          
+          unique_lock<mutex> lock(GlobalMapMutex_);  
+          globalMap_[i] = cloudUpdated;
+
+          lock.unlock();
+          trajectory_[i] = optGlobalMapLoc_[i];
+        }
+      }
+      ROS_WARN("transform cloud");
+
+      for(int i = 0; i < optKeyframeNum; i++){
+        // Fuse occlude points with opt global map
+        PointXY localMapCenter_;
+        localMapCenter_.x = localMapLoc_[i].x;
+        localMapCenter_.y = localMapLoc_[i].y;
+        PointCloud<PointXY>::Ptr cloud(new PointCloud<PointXY>());
+        int index = 0;
+
+        for(int j = 0; j < optKeyframeNum; j++){  // Get the center points of all local map
+          PointXY pt;
+          pt.x = localMapLoc_[j].x;
+          pt.y = localMapLoc_[j].y;
+          cloud->push_back(pt);
+        }
+
+        KdTreeFLANN<PointXY> kdtree;
+        vector<int> pointIdxRadiusSearch;
+        vector<float> pointRadiusSquaredDistance;
+        PointXY searchPoint;
+        kdtree.setInputCloud(cloud);
+        vector<vector<int>> pointIdx;
+        vector<vector<float>> pointRadiusDistance;
+        float radius = 25.0;   // TODO: Param
+        searchPoint = localMapCenter_;
+
+        if(kdtree.radiusSearch(searchPoint, radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0){ // Find the adjacent local map using kdtree with their center points
+          pointIdx.push_back(pointIdxRadiusSearch);
+        }
+
+        int count = 0;
+        umap out_new, out_old;
+
+        if(pointIdx[index].size() > 2){
+          
+          for(auto j = 1; j < pointIdx[index].size(); j++){  
+            // Convert pointcloud to hash for fusing
+            out_new.clear();
+            out_old.clear();
+            pointCloudtoHash(globalMap_[pointIdx[index][j]], out_new);
+            pointCloudtoHash(globalMap_[i], out_old);
+
+            for(umap::iterator iter = out_new.begin(); iter != out_new.end();){
+              // Find Point with Near Position
+              GridPoint tmp(iter->first.x, iter->first.y);
+              GridPointData tmp_data(iter->second.elevation, iter->second.var, iter->second.r, iter->second.g, iter->second.b, iter->second.intensity, iter->second.travers);
+              umap::const_iterator got = out_old.find(tmp);
+
+              if(got != out_old.end() && got->second.var > 0 && got->second.var < 1){
+                // Update Point Elevation and Variance
+                count++;
+                tmp_data.elevation = pow(iter->second.var, 2) * got->second.elevation + pow(got->second.var, 2) * iter->second.elevation / pow(got->second.var, 2) + pow(iter->second.var, 2);
+                tmp_data.var = pow(got->second.var, 2) * pow(iter->second.var, 2) / pow(got->second.var, 2) + pow(iter->second.var, 2);
+
+                // Delete the same point in two hash, and add fused point to both.
+                out_old.erase(tmp);
+                iter = out_new.erase(iter);
+                out_new.insert(make_pair(tmp, tmp_data));
+                out_old.insert(make_pair(tmp, tmp_data));
+              }
+              else{
+                iter++;
+              }
+            }
+
+            // Put the optimized local map into the visual stack
+            unique_lock<mutex> lock(GlobalMapMutex_);
+            pointCloud::Ptr tmp, tmp_now;
+            localHashtoPointCloud(out_new, tmp); 
+            globalMap_[pointIdx[index][j]] = *tmp;
+            localHashtoPointCloud(out_old, tmp_now); 
+            globalMap_[i] = *tmp_now;
+            lock.unlock();
+          }
+
+          index++;
+        }
+
+        ROS_WARN("OPTIMIZE count: %d",count);
+
+      }
+
+      // Visual step
+      unique_lock<mutex> lock(GlobalMapMutex_);
+      for(int i = 0; i < globalMap_.size(); i++){
+        visualCloud_ += globalMap_[i];
+      }
+
+      double t2 = ros::Time::now ().toSec();
+      ROS_WARN("UPDATE GLOBAL MAP: %lf", t2-t1);
+      optFlag = 0;
+	  }
+	  r.sleep();
+	}
+}
+
+
+/*
  * Update prediction
  */
 bool ElevationMapping::updatePrediction(const ros::Time& time)
@@ -769,13 +931,13 @@ bool ElevationMapping::updatePrediction(const ros::Time& time)
 /*
  * Update point location
  */
-bool ElevationMapping::updatepointsMapLocation()
+bool ElevationMapping::updatepointsMapLocation(const ros::Time& timeStamp)
 {
   ROS_DEBUG("Elevation map is checked for relocalization.");
 
   geometry_msgs::PointStamped trackPoint;
   trackPoint.header.frame_id = trackPointFrameId_;
-  trackPoint.header.stamp = ros::Time(0);
+  trackPoint.header.stamp = timeStamp;
   convertToRosGeometryMsg(trackPoint_, trackPoint.point);
   geometry_msgs::PointStamped trackPointTransformed;
 
@@ -786,9 +948,28 @@ bool ElevationMapping::updatepointsMapLocation()
     return false;
   }
 
+  // get tf
+  try{
+    transformListener_.lookupTransform("/" + robot_name + "/map", trackPointFrameId_, timeStamp, trackPoseTransformed_);
+  }catch (tf::TransformException &ex) {
+    ROS_ERROR("%s",ex.what());
+    ros::Duration(1.0).sleep();
+  }
+
   trackPointTransformed_x = trackPointTransformed.point.x;
   trackPointTransformed_y = trackPointTransformed.point.y;
   trackPointTransformed_z = trackPointTransformed.point.z;
+
+  // ROS_WARN("JumpOdomFlag %d, trackPointTransformed_z %lf, later_trackPointTransformed_z %lf", JumpOdomFlag, trackPointTransformed_z, later_trackPointTransformed_z);
+
+  // JumpOdom is not sync to the tf in front-end odometry
+  if(JumpOdomFlag == 1 && abs(trackPointTransformed_z - later_trackPointTransformed_z) <= 0.02){
+    JumpCount ++;
+  }else if(JumpCount >= 3){
+    JumpOdomFlag = 0;
+    JumpFlag = 1;
+    JumpCount = 0;
+  }
 }
 
 
@@ -805,95 +986,37 @@ bool ElevationMapping::updateMapLocation()
   grid_map::Position M_position;
   
   // handle odom jump phenomenone when optimization is done
-  if(JumpOdomFlag == 1)
-  {
-    tf::StampedTransform trackPoseTransformed_;
-    tf::StampedTransform map2vel;
-    
-    geometry_msgs::PointStamped trackPointTransformed;
+  if(JumpOdomFlag == 1){    
 
-    try{
-      transformListener_.lookupTransform("/" + robot_name + "/map", "/" + robot_name + "/Local", ros::Time(0), trackPoseTransformed_);  // TODO: Param
-      
-    }catch (tf::TransformException &ex) {
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-    }
-
-    tf::StampedTransform map2sensor;
-    try{
-      transformListener_.lookupTransform("/" + robot_name + "/map", trackPointFrameId_, ros::Time(0), map2sensor);  // TODO: Param
-      ROS_WARN("map2sensor____________********* %lf", map2sensor.getOrigin().z());
-    }catch (tf::TransformException &ex) {
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-    }
-    float sensor_Z = map2sensor.getOrigin().z();
-
-    // closeLooptime
-    // float detal_x = trackPoseTransformed_.getOrigin().x() - trackPointTransformed_x;
-    // float detal_y = trackPoseTransformed_.getOrigin().y() - trackPointTransformed_y;
+    float opt_position[2];
+    float opt_alignedPosition[2];
     float height_update = trackPointTransformed_z - later_trackPointTransformed_z;
 
-    if(sensor_Z != closeLoopZ)
-    {
-      pointCloud cloudUpdated;
-      pointCloud::Ptr updatedLocalMap;
-      localHashtoPointCloud(localMap_, updatedLocalMap);
+    opt_position[0] = trackPointTransformed_x;
+    opt_position[1] = trackPointTransformed_y;
 
-      Eigen::Isometry3f T = Eigen::Isometry3f::Identity();
-      T = optGlobalMapLoc_[globalMap_.size()] * trajectory_[globalMap_.size()].inverse();
-      Eigen::Matrix4f transformMatrix = T.matrix();
-      pcl::transformPointCloud(*updatedLocalMap, cloudUpdated, transformMatrix);  
+    Map_optmove(opt_position, height_update, resolution_,  length_, opt_alignedPosition);
 
-      visualCloud_ += cloudUpdated;
-      
-      float opt_position[2];
-      float opt_alignedPosition[2];
-      
-      geometry_msgs::PointStamped trackPoint;
-      trackPoint.header.frame_id = "/" + robot_name + "/Local";
-      trackPoint.header.stamp = ros::Time(0);
-      convertToRosGeometryMsg(trackPoint_, trackPoint.point);
-      geometry_msgs::PointStamped trackPointTransformed;
-      trackPoint.point.x -= 2 * resolution_;
-      try {
-        transformListener_.transformPoint(map_.getFrameId(), trackPoint, trackPointTransformed);
-      } catch (TransformException &ex) {
-        ROS_ERROR("%s", ex.what());
-        return false;
-      }
+    M_position.x() = opt_alignedPosition[0];
+    M_position.y() = opt_alignedPosition[1];
+    // map_.opt_move(M_position, height_update);
+    prevMap_ = map_.visualMap_;
 
-      opt_position[0] = trackPointTransformed.point.x;
-      opt_position[1] = trackPointTransformed.point.y;
-      height_update = trackPointTransformed_z - later_trackPointTransformed_z;
+  }else{
 
-      Map_optmove(opt_position, height_update, resolution_,  length_, opt_alignedPosition);
-      M_position.x() = opt_alignedPosition[0];
-      M_position.y() = opt_alignedPosition[1];
-      map_.opt_move(M_position, height_update);
-      prevMap_ = map_.visualMap_;
-      //Map_closeloop(update, height_update, length_, resolution_);
-      grid_map_msgs::GridMap message;
-      GridMapRosConverter::toMessage(prevMap_, message);
-      lastmapPublisher_.publish(message);
-      JumpOdomFlag =0;
-      JumpFlag = 1;
-    }
+    int d_startindex[2];
+
+    // move the grid map to this location
+    Move(current_p , resolution_,  length_, current_position, d_startindex, position_shift);
+
+    M_startindex.x() = d_startindex[0];
+    M_startindex.y() = d_startindex[1];
+    M_position.x() = current_position[0];
+    M_position.y() = current_position[1];
+
+    map_.move(M_startindex, M_position);
   }
 
-  int d_startindex[2];
-
-  // move the grid map to this location
-  Move(current_p , resolution_,  length_, current_position, d_startindex, position_shift);
-  
-  M_startindex.x() = d_startindex[0];
-  M_startindex.y() = d_startindex[1];
-
-  M_position.x() = current_position[0];
-  M_position.y() = current_position[1];
-  
-  map_.move(M_startindex, M_position);
   later_trackPointTransformed_z = trackPointTransformed_z;
   return true;
 }
@@ -1035,6 +1158,34 @@ void ElevationMapping::pointCloudtoHash(pointCloud localPointCloud, umap& out)
  */
 void ElevationMapping::gridMaptoPointCloud(grid_map::GridMap gridmap, pointCloud::Ptr& pc)
 {
+  Anypoint point;
+  pointCloud out_pc;
+
+  int index, index_x, index_y;
+  grid_map::Index startIndex = gridmap.getStartIndex();
+
+  for (GridMapIterator iterator(gridmap); !iterator.isPastEnd(); ++iterator) {
+    index_x = (*iterator).transpose().x();
+    index_y = (*iterator).transpose().y();
+    index = index_x * length_ + index_y;
+    if(gridmap.at("elevation", *iterator) != -10)
+    {
+      grid_map::Position gridPosition;
+      gridmap.getPosition(*iterator, gridPosition);
+
+      point.x = gridPosition.x();
+      point.y = gridPosition.y();
+      point.z = gridmap.at("elevation", *iterator);
+      point.r = gridmap.at("color_r", *iterator);
+      point.g = gridmap.at("color_g", *iterator);
+      point.b = gridmap.at("color_b", *iterator);
+      point.intensity = gridmap.at("intensity", *iterator);
+      point.covariance =  gridmap.at("variance", *iterator);
+      point.travers = gridmap.at("traver", *iterator);     
+      out_pc.push_back(point);
+    }
+  }
+  pc = out_pc.makeShared();
 }
 
 

@@ -13,5 +13,5 @@ track_point_z: 0.0
 octomap_resolution: 0.01
 map_saving_file: "./map.pcd"
 submap_saving_dir: "./submaps/"
-camera_params_yaml: "./yq_intrinsic.yaml"
+camera_params_yaml: "/home/mav-lab/Projects/git_backup/GEM_ws/src/elevation_mapping/yq_intrinsic.yaml"
 orthomosaic_saving_dir: "./image/"

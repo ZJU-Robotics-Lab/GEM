@@ -1,5 +1,15 @@
 ## GEM: Online Globally consistent dense elevation mapping for unstructured terrain
 
+### NEW FEATURES !!!
+
+**1. Multi-resolution map representation implemented with octomap**
+
+**2. Submap point cloud upsample implemented by mls api in PCL**
+
+**3. Add costmap api for exploration tasks**
+
+**4. Add loop correction module (relative front-end is coming soon) **
+
 This is a [ROS] package developed for elevation mapping with a mobile robot which is modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
 
 The software is designed for (local-global) navigation tasks with robots that are equipped with pose estimation (e.g. IMU & odometry) and a distance sensor (e.g. structured light (Kinect, RealSense), laser range sensor, stereo camera). The provided local elevation map is limited around the robot and reflects the pose uncertainty that is aggregated through the motion of the robot (robot-centric mapping). The global map is represented as several submaps corresponding to a pose provided by odometry. This method is developed to explicitly handle drift of the robot pose estimation.
@@ -14,9 +24,13 @@ This project was developed at Zhejiang University (Robotics Lab, College of Cont
 
 <img alt="Elevation Map Example" src="elevation_mapping/elevation_mapping_demos/doc/cross_road.png" width="700">
 
-## Loop Performance (Loop version is coming soon)
+## Loop Performance (Loop version is now available)
 <img alt="Elevation Map before loop" src="elevation_mapping/elevation_mapping_demos/doc/before_loop.png" width="700">
+
 <img alt="Elevation Map after loop" src="elevation_mapping/elevation_mapping_demos/doc/after_loop.png" width="700">
+
+## Costmap
+<img alt="Elevation Map before loop" src="elevation_mapping/elevation_mapping_demos/doc/costmap.png" width="700">
 
 ## Video
 <a alt="GEM" href="https://youtu.be/MufkLpkNhhY"><img src="elevation_mapping/elevation_mapping_demos/doc/cross_road.png" width="700" ></a>
@@ -82,6 +96,7 @@ In order to install the GEM, clone the latest version from this repository into 
 
 In order to get the GEM to run with your robot, you will need to adapt some parameters. It is the easiest if duplicate and adapt all the parameter files that you need to change from the `elevation_mapping_demos` package (e.g. the `simple_demo` example). These are specifically the parameter files in `config` and the launch file from the `launch` folder.
 
+    roslaunch filter.launch
     roslaunch elevation_mapping_demos simple_demo.launch
 
 ## Simple Demo
@@ -89,8 +104,9 @@ In order to get the GEM to run with your robot, you will need to adapt some para
 You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZnAVSpL0T6GZkJQ14Ptm4w_1ALc/view?usp=sharing
 
     rosbag play test.bag --clock --pause
+    roslaunch filter.launch
     roslaunch elevation_mapping_demos simple_demo.launch
-    (optional - if use costmap)
+    # optional - if use costmap
     roslaunch pointMap_layer create_globalmap.launch 
 
 ## !!! An Important Thing
@@ -247,19 +263,6 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 * **`sensor_model_normal_factor_a`**, **`sensor_model_normal_factor_b`**, **`sensor_model_normal_factor_c`**, **`sensor_model_lateral_factor`** (double)
 
     The data for the sensor noise model.
-
-
-## NEW FEATURES
-
-**1. Multi-resolution map representation implemented with octomap**
-
-**2. Submap point cloud upsample implemented by mls api in PCL**
-
-**3. Add costmap api for exploration tasks**
-
-<img alt="Elevation Map before loop" src="elevation_mapping/elevation_mapping_demos/doc/costmap.png" width="700">
-
-
 
 
 ## Bugs & Feature Requests

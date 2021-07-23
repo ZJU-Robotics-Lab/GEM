@@ -164,16 +164,31 @@ class ElevationMapping
   * Merge input cloud to the existing local map
   */
   void updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& rawPointCloud);
+    
+  /*!
+  * Correct and merge submaps to a global map
+  */
+  void updateGlobalMap();
   
   /*!
   * Subscribe map saving signal
   */
   void mapSavingSignal(const std_msgs::Bool::ConstPtr& saveSignal);
-  
+    
+  /*!
+  * Subscribe optimization frames
+  */ 
+  void optKeyframeCallback(const slam_msg::Keyframes::ConstPtr& optKeyFrame);
+
   /*!
   * Subscribe dense map buiding signal
   */
   void denseMappingSignal(const std_msgs::Bool::ConstPtr& denseSignal);
+  
+  /*!
+  * Subscribe new keyframe signal
+  */ 
+  void newKeyframeSignal(const nav_msgs::Odometry::ConstPtr& newKeyframeSignal);
 
   /*!
    * Callback function for new data to be added to the elevation map.
@@ -259,7 +274,7 @@ class ElevationMapping
    * Updates the location of the pointcloud map
    * @return true if successful.
    */
-  bool updatepointsMapLocation();
+  bool updatepointsMapLocation(const ros::Time& timeStamp);
 
   /*!
    * Reset and start the map update timer.
@@ -292,6 +307,9 @@ class ElevationMapping
   //! Gridmap scale.
   int length_;
 
+  //! Keyframe num for optimization
+  int optKeyframeNum;
+
   //! Gridmap resolution.
   double resolution_;
 
@@ -308,6 +326,7 @@ class ElevationMapping
   bool JumpOdomFlag;  // odom change flag
   bool newLocalMapFlag; // new local map flag
   bool insertionFlag;
+  int JumpCount;
 
   //! initial cache size of robot pose
   int robotPoseCacheSize_;
@@ -359,6 +378,8 @@ class ElevationMapping
   ros::Publisher globalMapPublisher_;
   ros::Publisher keyFramePCPublisher_;
   ros::Publisher globalOctomapPublisher_;
+  ros::Subscriber optKeyframeSub_;
+  ros::Subscriber keyFrameSignalSub_;
   ros::Subscriber savingSignalSub_;
   ros::Subscriber denseSubmapSignalSub_;
 
@@ -384,6 +405,7 @@ class ElevationMapping
 
   //! TF listener and broadcaster.
   tf::TransformListener transformListener_;
+  tf::StampedTransform trackPoseTransformed_;
 
   //! Point which the elevation map follows.
   kindr::Position3D trackPoint_;

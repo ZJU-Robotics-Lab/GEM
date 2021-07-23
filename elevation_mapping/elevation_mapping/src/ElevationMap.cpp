@@ -121,14 +121,6 @@ sensor_msgs::ImagePtr ElevationMap::show(ros::Time timeStamp, string robot_name,
   // Publish orthomoasic image
   sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
   orthomosaicPublisher_.publish(msg);
-  static int count = 0;
-  std::ostringstream strs_x, strs_y, cc;
-  strs_x << trackPointTransformed_x;
-  strs_y << trackPointTransformed_y;
-  cc << count;
-  std::string str = orthoDir + cc.str()  + ".jpg";
-  cv::imwrite(str, image);
-  count++;
 
   pcl_conversions::toPCL(ros::Time::now(), show_pointCloud.header.stamp);
   show_pointCloud.header.frame_id = "/" + robot_name + "/map";
