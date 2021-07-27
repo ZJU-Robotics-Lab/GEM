@@ -8,7 +8,7 @@
 
 **3. Add costmap api for exploration tasks**
 
-**4. Add loop correction module (relative front-end is coming soon) **
+**4. Add loop correction module (relative front-end is coming soon)**
 
 This is a [ROS] package developed for elevation mapping with a mobile robot which is modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
 
