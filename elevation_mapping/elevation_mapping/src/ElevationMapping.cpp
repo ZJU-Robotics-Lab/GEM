@@ -596,6 +596,9 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
   delta_x = position_shift[0];
   delta_y = position_shift[1];
 
+   if(initFlag == 1)
+     prevMap_ = map_.visualMap_;
+
   // Should adapt to the SLAM. Check if a new local map is needed
   // if(initFlag == 0 && sqrt(pow((trackPoseTransformed_.getOrigin().x() - trajectory_.back().translation().x()),2) + pow((trackPoseTransformed_.getOrigin().y() - trajectory_.back().translation().y()),2)) >= localMapSize_){
   //   newLocalMapFlag = 1;
