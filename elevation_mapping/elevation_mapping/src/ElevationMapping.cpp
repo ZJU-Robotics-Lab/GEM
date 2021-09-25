@@ -973,6 +973,7 @@ bool ElevationMapping::updatepointsMapLocation(const ros::Time& timeStamp)
     JumpFlag = 1;
     JumpCount = 0;
   }
+  return false;
 }
 
 
