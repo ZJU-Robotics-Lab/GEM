@@ -57,7 +57,7 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
     : nodeHandle_(nodeHandle),
       map_(nodeHandle, robot_name_),
       gmap_(nodeHandle, robot_name_),
-      robot_name(robot_name_),
+      robotName(robot_name_),
       robotMotionMapUpdater_(nodeHandle),
       isContinouslyFusing_(false),
       ignoreRobotMotionUpdates_(false),
@@ -69,18 +69,36 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   
   // hash initialization
   localMap_.rehash(10000);
+
+  // check some format
+  checkFormat();
  
   // publishers
-  pointMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/history_point", 1);
-  subMapPublisher_ = nodeHandle_.advertise<dislam_msgs::SubMap>("/" + robot_name + "/submap", 1);
-  globalMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/global_point", 1);
-  lastmapPublisher_ =  nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/opt_map", 1);
-  keyFramePCPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/keyframe_pc", 1);
-  octomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>("/" + robot_name + "/local_octomap", 1);
-  globalOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>("/" + robot_name + "/global_octomap", 1);
+  pointMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/history_point", 1);
+  subMapPublisher_ = nodeHandle_.advertise<dislam_msgs::SubMap>(robotName + "/submap", 1);
+  globalMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/global_point", 1);
+  lastmapPublisher_ =  nodeHandle_.advertise<grid_map_msgs::GridMap>(robotName + "/opt_map", 1);
+  keyFramePCPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/keyframe_pc", 1);
+  octomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/local_octomap", 1);
+  globalOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/global_octomap", 1);
 
   readParameters();
   initialize();
+}
+
+
+/*
+ * Check some parameters' format
+ */
+bool ElevationMapping::checkFormat()
+{
+  ROS_INFO("Check Format");
+  // check format
+  std::string slash = "/";
+  if((robotName.find(slash)) == string::npos && !robotName.empty())
+    robotName = "/" + robotName;
+
+  ROS_INFO("Check Format Done");
 }
 
 
@@ -99,10 +117,10 @@ ElevationMapping::~ElevationMapping()
 void ElevationMapping::Run()
 {
   // subscriber for map saving api
-  denseSubmapSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/dense_mapping", 1, &ElevationMapping::denseMappingSignal, this);
-  savingSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/map_saving", 1, &ElevationMapping::mapSavingSignal, this);
-  optKeyframeSub_ = nodeHandle_.subscribe("/" + robot_name + "/opt_keyframes", 1, &ElevationMapping::optKeyframeCallback, this);
-  keyFrameSignalSub_ = nodeHandle_.subscribe("/" + robot_name + "/new_keyframe", 1, &ElevationMapping::newKeyframeSignal, this);
+  denseSubmapSignalSub_ = nodeHandle_.subscribe(robotName + "/dense_mapping", 1, &ElevationMapping::denseMappingSignal, this);
+  savingSignalSub_ = nodeHandle_.subscribe(robotName + "/map_saving", 1, &ElevationMapping::mapSavingSignal, this);
+  optKeyframeSub_ = nodeHandle_.subscribe(robotName + "/opt_keyframes", 1, &ElevationMapping::optKeyframeCallback, this);
+  keyFrameSignalSub_ = nodeHandle_.subscribe(robotName + "/new_keyframe", 1, &ElevationMapping::newKeyframeSignal, this);
 }
 
 
@@ -159,9 +177,9 @@ bool ElevationMapping::readParameters()
   timeTolerance_.fromSec(timeTolerance);
   
   // ElevationMap parameters. TODO Move this to the elevation map class.
-  string frameId;
-  nodeHandle_.param("map_frame_id", frameId, string("/map"));
-  map_.setFrameId(frameId);
+
+  nodeHandle_.param("map_frame_id", mapFrameId, string("/map"));
+  map_.setFrameId(mapFrameId);
 
   grid_map::Length length;
   grid_map::Position position;
@@ -173,7 +191,7 @@ bool ElevationMapping::readParameters()
   nodeHandle_.param("resolution", resolution, 0.01);
   map_.setGeometry(length, resolution, position);
   
-  nodeHandle_.param("map_saving_file", map_saving_file_, string("/home/mav-lab/slam_ws/test.pcd"));
+  nodeHandle_.param("map_saving_file", mapSavingDir, string("/home/mav-lab/slam_ws/test.pcd"));
   nodeHandle_.param("submap_saving_dir", submapDir, string("/home/mav-lab/slam_ws/"));
 
   nodeHandle_.param("min_variance", map_.minVariance_, pow(0.003, 2));
@@ -228,7 +246,7 @@ bool ElevationMapping::initialize()
   octoTree = new octomap::ColorOcTree(octoResolution_);
   globalOctoTree = new octomap::ColorOcTree(octoResolution_);  
   denseSubmap = false;
-  newLocalMapFlag = 0;
+  newLocalMapFlag = 1;
   JumpOdomFlag = 0;
   JumpCount = 0;
   JumpFlag = 0;
@@ -399,11 +417,11 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   Map_feature(length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
 
   // get orthomosaic image
-  orthoImage = map_.show(timeStamp, robot_name, trackPointTransformed_x, trackPointTransformed_y, length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
+  orthoImage = map_.show(timeStamp, robotName, trackPointTransformed_x, trackPointTransformed_y, length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
 
   // update local map and visual the local point cloud
   updateLocalMap(rawPointCloud);
-  // visualPointMap();
+  visualPointMap();
   // visualOctomap();
   
   // raytracing for obstacle removal
@@ -438,8 +456,8 @@ void ElevationMapping::savingMap()
     out_color.push_back(pt);
   }
 
-  ROS_INFO("Saving Map to %s", map_saving_file_);
-  pcl::io::savePCDFile(map_saving_file_, out_color);
+  ROS_INFO("Saving Map to %s", mapSavingDir);
+  pcl::io::savePCDFile(mapSavingDir, out_color);
 }
 
 
@@ -479,13 +497,13 @@ void ElevationMapping::composingGlobalMap()
 
     sensor_msgs::PointCloud2 output;
     pcl::toROSMsg(cloudpt, output);
-    output.header.frame_id = "/" + robot_name + "/map";
+    output.header.frame_id = mapFrameId;
     globalMapPublisher_.publish(output);
 
     octomap_msgs::Octomap octomsg;
     pointCloudtoOctomap(cloudpt, *globalOctoTree);
     octomap_msgs::fullMapToMsg(*globalOctoTree, octomsg);
-    octomsg.header.frame_id = "/" + robot_name + "/map";
+    octomsg.header.frame_id = mapFrameId;
     octomsg.resolution = globalOctoTree->getResolution();  
     globalOctomapPublisher_.publish(octomsg); 
   }
@@ -497,16 +515,16 @@ void ElevationMapping::composingGlobalMap()
  */
 void ElevationMapping::visualPointMap()
 {
-  ros::Rate r(10);
-	while(ros::ok()){
-    if(!optFlag){
-      sensor_msgs::PointCloud2 output;
-      pcl::toROSMsg(visualCloud_, output);
-      output.header.frame_id = "/" + robot_name + "/map";
-      pointMapPublisher_.publish(output);
-    }
-    r.sleep();
+  // ros::Rate r(10);
+	// while(ros::ok()){
+  if(!optFlag){
+    sensor_msgs::PointCloud2 output;
+    pcl::toROSMsg(visualCloud_, output);
+    output.header.frame_id = mapFrameId;
+    pointMapPublisher_.publish(output);
   }
+  //   r.sleep();
+  // }
 }
 
 
@@ -520,7 +538,7 @@ void ElevationMapping::visualOctomap()
     pointCloudtoOctomap(visualCloud_, *octoTree);
 
     octomap_msgs::fullMapToMsg(*octoTree, octomsg);
-    octomsg.header.frame_id = "/" + robot_name + "/map";
+    octomsg.header.frame_id = mapFrameId;
     octomsg.resolution = octoTree->getResolution();  
     octomapPublisher_.publish(octomsg);
   }
@@ -535,7 +553,7 @@ void ElevationMapping::mapSavingSignal(const std_msgs::Bool::ConstPtr& savingSig
   if(savingSignal->data == 1)
     savingMap();
     // savingSubMap();
-  ROS_WARN("Saving Global Map at: %s.", map_saving_file_.c_str());
+  ROS_WARN("Saving Global Map at: %s.", mapSavingDir.c_str());
 }
 
 
@@ -645,7 +663,7 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
       dislam_msgs::SubMap output;
       sensor_msgs::PointCloud2 pc;
       pcl::toROSMsg(*out_pc, pc);
-      pc.header.frame_id = "/" + robot_name + "/map";
+      pc.header.frame_id = mapFrameId;
       pc.header.stamp = ros::Time(0);
       output.submap = pc;
       output.orthoImage = *orthoImage;
@@ -953,7 +971,7 @@ bool ElevationMapping::updatepointsMapLocation(const ros::Time& timeStamp)
 
   // get tf
   try{
-    transformListener_.lookupTransform("/" + robot_name + "/map", trackPointFrameId_, timeStamp, trackPoseTransformed_);
+    transformListener_.lookupTransform(mapFrameId, trackPointFrameId_, timeStamp, trackPoseTransformed_);
   }catch (tf::TransformException &ex) {
     ROS_ERROR("%s",ex.what());
     ros::Duration(1.0).sleep();

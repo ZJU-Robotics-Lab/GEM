@@ -210,6 +210,10 @@ class ElevationMapping
   
 
   /********** Utility functions **********/
+  /*!
+  * Check some params' format
+  */  
+  bool checkFormat();
 
   /*!
   * Convert from hash map to point cloud
@@ -345,12 +349,12 @@ class ElevationMapping
   float later_trackPointTransformed_z;
 
   //! names
-  string robot_id;
   string submapDir;
-  string robot_name;
-  string map_saving_file_;
+  string robotName;
+  string mapFrameId;
+  string mapSavingDir;
   string cameraParamsFile;
-
+  
   //! local hash map 
   umap localMap_;
 

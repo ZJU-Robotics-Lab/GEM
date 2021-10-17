@@ -54,10 +54,10 @@ ElevationMap::ElevationMap(ros::NodeHandle nodeHandle, string robot_name)
 
   clear();
 
-  visualMapPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/visual_map", 1);
-  elevationMapRawPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>("/" + robot_name + "/elevation_map_raw", 1);
-  VpointsPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>("/" + robot_name + "/visualpoints",1);
-  orthomosaicPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>("/" + robot_name + "/orthomosaic", 1);
+  visualMapPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>(robot_name + "/visual_map", 1);
+  elevationMapRawPublisher_ = nodeHandle_.advertise<grid_map_msgs::GridMap>(robot_name + "/elevation_map_raw", 1);
+  VpointsPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robot_name + "/visualpoints",1);
+  orthomosaicPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>(robot_name + "/orthomosaic", 1);
   initialTime_ = ros::Time::now();
 }
 
@@ -123,7 +123,7 @@ sensor_msgs::ImagePtr ElevationMap::show(ros::Time timeStamp, string robot_name,
   orthomosaicPublisher_.publish(msg);
 
   pcl_conversions::toPCL(ros::Time::now(), show_pointCloud.header.stamp);
-  show_pointCloud.header.frame_id = "/" + robot_name + "/map";
+  show_pointCloud.header.frame_id = robot_name + "/map";
 
   if(show_pointCloud.size() > 0)
   {
