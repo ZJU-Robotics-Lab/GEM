@@ -80,7 +80,8 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   lastmapPublisher_ =  nodeHandle_.advertise<grid_map_msgs::GridMap>(robotName + "/opt_map", 1);
   keyFramePCPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/keyframe_pc", 1);
   octomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/local_octomap", 1);
-  globalOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/global_octomap", 1);
+  roadOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/road_octomap", 1);
+  obsOctomapPublisher_ = nodeHandle_.advertise<octomap_msgs::Octomap>(robotName + "/obs_octomap", 1);
 
   readParameters();
   initialize();
@@ -159,7 +160,8 @@ bool ElevationMapping::readParameters()
   nodeHandle_.param("camera_params_yaml", cameraParamsFile, string("/home/mav-lab/intrinsic.yaml"));
   nodeHandle_.param("robot_local_map_size", localMapSize_, 20.0);
   nodeHandle_.param("travers_threshold", traversThre, 0.0);
-  nodeHandle_.param("octomap_resolution", octoResolution_, 0.04);
+  nodeHandle_.param("octomap_road_resolution", octoRoadResolution_, 0.2);
+  nodeHandle_.param("octomap_obs_resolution", octoObsResolution_, 0.1);
   nodeHandle_.param("track_point_x", trackPoint_.x(), 0.0);
   nodeHandle_.param("track_point_y", trackPoint_.y(), 0.0);
   nodeHandle_.param("track_point_z", trackPoint_.z(), 0.0);
@@ -243,8 +245,9 @@ bool ElevationMapping::initialize()
   Duration(1.0).sleep(); // Need this to get the TF caches fill up.
   resetMapUpdateTimer();
   
-  octoTree = new octomap::ColorOcTree(octoResolution_);
-  globalOctoTree = new octomap::ColorOcTree(octoResolution_);  
+  octoTree = new octomap::ColorOcTree(octoRoadResolution_);
+  roadOctoTree = new octomap::ColorOcTree(octoRoadResolution_);  
+  obsOctoTree = new octomap::ColorOcTree(octoObsResolution_);  
   denseSubmap = false;
   newLocalMapFlag = 1;
   JumpOdomFlag = 0;
@@ -500,12 +503,17 @@ void ElevationMapping::composingGlobalMap()
     output.header.frame_id = mapFrameId;
     globalMapPublisher_.publish(output);
 
-    octomap_msgs::Octomap octomsg;
-    pointCloudtoOctomap(cloudpt, *globalOctoTree);
-    octomap_msgs::fullMapToMsg(*globalOctoTree, octomsg);
-    octomsg.header.frame_id = mapFrameId;
-    octomsg.resolution = globalOctoTree->getResolution();  
-    globalOctomapPublisher_.publish(octomsg); 
+    octomap_msgs::Octomap road_octomsg, obs_octomsg;
+    pointCloudtoOctomap(cloudpt, *roadOctoTree, *obsOctoTree);
+    octomap_msgs::fullMapToMsg(*roadOctoTree, road_octomsg);
+    road_octomsg.header.frame_id = mapFrameId;
+    road_octomsg.resolution = roadOctoTree->getResolution();  
+    roadOctomapPublisher_.publish(road_octomsg); 
+
+    octomap_msgs::fullMapToMsg(*obsOctoTree, obs_octomsg);
+    obs_octomsg.header.frame_id = mapFrameId;
+    obs_octomsg.resolution = obsOctoTree->getResolution();  
+    roadOctomapPublisher_.publish(obs_octomsg); 
   }
 }
 
@@ -535,7 +543,7 @@ void ElevationMapping::visualOctomap()
 {
   octomap_msgs::Octomap octomsg;
   if(visualCloud_.size() > 0){
-    pointCloudtoOctomap(visualCloud_, *octoTree);
+    // pointCloudtoOctomap(visualCloud_, *octoTree);
 
     octomap_msgs::fullMapToMsg(*octoTree, octomsg);
     octomsg.header.frame_id = mapFrameId;
@@ -720,7 +728,7 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
       index_y = (*iterator).transpose().y();
       index = index_x * length_ + index_y;
 
-      if(prevMap_.at("elevation", *iterator) != -10 && prevMap_.at("traver", *iterator) >= traversThre){
+      if(prevMap_.at("elevation", *iterator) != -10 && prevMap_.at("traver", *iterator) >= 0.0){
        if(((position.x() < (current_x - length_ * resolution_ / 2) || position.y() < (current_y - length_ * resolution_ / 2 )) && (delta_x > 0  && delta_y > 0))
            || ((position.x() > (current_x + length_ * resolution_ / 2 ) || position.y() > (current_y + length_ * resolution_ / 2 )) && (delta_x < 0 && delta_y < 0))
            || ((position.x() < (current_x - length_ * resolution_ / 2 ) || position.y() > (current_y + length_ * resolution_ / 2 )) && (delta_x > 0 && delta_y < 0))
@@ -1143,17 +1151,24 @@ void ElevationMapping::localHashtoPointCloud(umap localMap, pointCloud::Ptr& out
 /*
  * Utility function: convert colored point cloud to Octomap
  */
-void ElevationMapping::pointCloudtoOctomap(pointCloud localPointCloud, octomap::ColorOcTree& tree)
+void ElevationMapping::pointCloudtoOctomap(pointCloud localPointCloud, octomap::ColorOcTree& roadTree, octomap::ColorOcTree& obsTree)
 {
   for(auto p:localPointCloud.points) {
     // insert point into tree
-    tree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
+    if(p.travers > traversThre)
+      roadTree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
+    else
+      obsTree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
   }
   for(auto p:localPointCloud.points) {
     // integrate color point into tree
-    tree.integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b );
+    if(p.travers > traversThre)
+      roadTree.integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b);
+    else
+      obsTree.integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b);
   }
-  tree.updateInnerOccupancy();
+  roadTree.updateInnerOccupancy();
+  obsTree.updateInnerOccupancy();
 }
 
 

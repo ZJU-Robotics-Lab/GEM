@@ -233,7 +233,7 @@ class ElevationMapping
   /*!
   * Saving point cloud map to a pcd file
   */
-  void pointCloudtoOctomap(pointCloud localPointCloud, octomap::ColorOcTree& tree);
+  void pointCloudtoOctomap(pointCloud localPointCloud, octomap::ColorOcTree& roadTree, octomap::ColorOcTree& obsTree);
   
   /*!
    * Saving point cloud map to a pcd file
@@ -362,9 +362,11 @@ class ElevationMapping
   sensor_msgs::ImagePtr orthoImage;
 
   //! octomap
-  double octoResolution_;
+  double octoRoadResolution_;
+  double octoObsResolution_;
   octomap::ColorOcTree *octoTree;
-  octomap::ColorOcTree *globalOctoTree;
+  octomap::ColorOcTree *roadOctoTree;
+  octomap::ColorOcTree *obsOctoTree;
 
   //! visual point clouds
   pointCloud global_map;
@@ -381,7 +383,8 @@ class ElevationMapping
   ros::Publisher pointMapPublisher_;
   ros::Publisher globalMapPublisher_;
   ros::Publisher keyFramePCPublisher_;
-  ros::Publisher globalOctomapPublisher_;
+  ros::Publisher roadOctomapPublisher_;
+  ros::Publisher obsOctomapPublisher_;
   ros::Subscriber optKeyframeSub_;
   ros::Subscriber keyFrameSignalSub_;
   ros::Subscriber savingSignalSub_;

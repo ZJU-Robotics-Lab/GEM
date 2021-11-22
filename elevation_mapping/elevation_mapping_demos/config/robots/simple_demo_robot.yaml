@@ -10,7 +10,8 @@ robot_local_map_size: 20
 track_point_x: 0.0
 track_point_y: 0.0
 track_point_z: 0.0
-octomap_resolution: 0.01
+octomap_road_resolution: 0.2
+octomap_obs_resolution: 0.1
 map_saving_file: "./map.pcd"
 submap_saving_dir: "./submaps/"
 camera_params_yaml: "/home/mav-lab/Projects/git_backup/GEM_ws/src/elevation_mapping/yq_intrinsic.yaml"
