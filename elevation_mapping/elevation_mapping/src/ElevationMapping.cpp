@@ -96,10 +96,13 @@ bool ElevationMapping::checkFormat()
   ROS_INFO("Check Format");
   // check format
   std::string slash = "/";
-  if((robotName.find(slash)) == string::npos && !robotName.empty())
+  if((robotName.find(slash)) == string::npos && !robotName.empty()){
     robotName = "/" + robotName;
+    return true;
+  }
 
   ROS_INFO("Check Format Done");
+  return false;
 }
 
 
