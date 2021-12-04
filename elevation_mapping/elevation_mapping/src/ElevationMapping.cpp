@@ -96,10 +96,13 @@ bool ElevationMapping::checkFormat()
   ROS_INFO("Check Format");
   // check format
   std::string slash = "/";
-  if((robotName.find(slash)) == string::npos && !robotName.empty())
+  if((robotName.find(slash)) == string::npos && !robotName.empty()){
     robotName = "/" + robotName;
+    return true;
+  }
 
   ROS_INFO("Check Format Done");
+  return false;
 }
 
 
@@ -513,7 +516,7 @@ void ElevationMapping::composingGlobalMap()
     octomap_msgs::fullMapToMsg(*obsOctoTree, obs_octomsg);
     obs_octomsg.header.frame_id = mapFrameId;
     obs_octomsg.resolution = obsOctoTree->getResolution();  
-    roadOctomapPublisher_.publish(obs_octomsg); 
+    obsOctomapPublisher_.publish(obs_octomsg); 
   }
 }
 
