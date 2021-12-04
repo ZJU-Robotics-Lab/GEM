@@ -211,11 +211,6 @@ class ElevationMapping
 
   /********** Utility functions **********/
   /*!
-  * Check some params' format
-  */  
-  bool checkFormat();
-
-  /*!
   * Convert from hash map to point cloud
   */  
   void localHashtoPointCloud(umap local_map, pointCloud::Ptr& outCloud);

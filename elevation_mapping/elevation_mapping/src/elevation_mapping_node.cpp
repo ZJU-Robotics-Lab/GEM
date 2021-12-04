@@ -10,6 +10,23 @@
 #include <signal.h>
 #include "elevation_mapping/ElevationMapping.hpp"
 
+
+/*
+* Check some parameters' format
+*/
+void checkFormat(std::string& robotName)
+{
+  ROS_INFO("Check Format");
+  // check format
+  std::string slash = "/";
+  if((robotName.find(slash)) == string::npos && !robotName.empty()){
+    robotName = "/" + robotName;
+  }
+
+  ROS_INFO("Check Format Done");
+}
+
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "elevation_mapping", ros::init_options::AnonymousName);
@@ -23,6 +40,8 @@ int main(int argc, char** argv)
   nodeHandle.param("robot_name", robot_name, string("robot1"));
   ROS_INFO("get robot_id: %s", robot_id.c_str());
   ROS_INFO("get robot_name: %s", robot_name.c_str());
+
+  checkFormat(robot_name);
 
   elevation_mapping::ElevationMapping elevationMap(nodeHandle, robot_name);
 

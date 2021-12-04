@@ -1,0 +1,43 @@
+<launch>
+  <param name="/use_sim_time" value="true" />
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager_0g_x" args="manager" output="screen" />
+  <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+  <node pkg="nodelet" type="nodelet" name="voxel_grid_0g_x" args="load pcl/VoxelGrid pcl_manager_0g_x" output="screen">
+    <remap from="~input" to="/kitti/velo/pointcloud" />
+    <remap from="~output" to="/tmp_0g" />
+    <rosparam>
+      filter_field_name: x
+      filter_limit_min: -40
+      filter_limit_max: 40
+      leaf_size: 0.2
+    </rosparam>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager_0g_z" args="manager" output="screen" />
+  <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+  <node pkg="nodelet" type="nodelet" name="voxel_grid_0g_z" args="load pcl/VoxelGrid pcl_manager_0g_z" output="screen">
+    <remap from="~input" to="/tmp_0g" />
+    <remap from="~output" to="/tmp2_0g" />
+    <rosparam>
+      filter_field_name: z
+      filter_limit_min: -25
+      filter_limit_max: 25
+      leaf_size: 0.2
+    </rosparam>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager_0g_y" args="manager" output="screen" />
+  <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+  <node pkg="nodelet" type="nodelet" name="voxel_grid_0g_y" args="load pcl/VoxelGrid pcl_manager_0g_y" output="screen">
+    <remap from="~input" to="/tmp2_0g" />
+    <remap from="~output" to="/robot0/pointcloud" />
+    <rosparam>
+      filter_field_name: y
+      filter_limit_min: -40
+      filter_limit_max: 40
+      leaf_size: 0.2
+    </rosparam>
+  </node>
+
+</launch>

@@ -69,9 +69,6 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   
   // hash initialization
   localMap_.rehash(10000);
-
-  // check some format
-  checkFormat();
  
   // publishers
   pointMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/history_point", 1);
@@ -86,25 +83,6 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   readParameters();
   initialize();
 }
-
-
-/*
- * Check some parameters' format
- */
-bool ElevationMapping::checkFormat()
-{
-  ROS_INFO("Check Format");
-  // check format
-  std::string slash = "/";
-  if((robotName.find(slash)) == string::npos && !robotName.empty()){
-    robotName = "/" + robotName;
-    return true;
-  }
-
-  ROS_INFO("Check Format Done");
-  return false;
-}
-
 
 /*
  * Destruct function
