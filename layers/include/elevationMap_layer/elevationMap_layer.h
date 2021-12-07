@@ -30,6 +30,7 @@ private:
 
   ros::Subscriber elevation_map_sub_;
   grid_map::GridMap elevation_map_;
+  double travers_thresh;
 
   bool elevation_map_available_;
   

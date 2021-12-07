@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>elevation_mapping</name>
+  <name>GEM</name>
   <version>0.4.0</version>
   <description>Generates an elevation map from distance measurements and robot pose information.</description>
-  <maintainer email="pfankhauser@anybotics.com">Péter Fankhauser</maintainer>
+  <maintainer email="xuechengxu@zju.edu.cn">Xuecheng Xu</maintainer>
   <license>BSD</license>
-  <url type="website">http://github.com/ethz-asl/elevation_mapping</url>
-  <url type="bugtracker">http://github.com/ethz-asl/elevation_mapping/issues</url>
-  <author email="pfankhauser@anybotics.com">Péter Fankhauser</author>
+  <url type="website">https://github.com/ZJU-Robotics-Lab/GEM</url>
+  <url type="bugtracker">https://github.com/ZJU-Robotics-Lab/GEM/issues</url>
+  <author email="xuechengxu@zju.edu.cn">Xuecheng Xu</author>
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
   <depend>message_filters</depend>

@@ -5,7 +5,7 @@ position_y: 0.0
 track_point_x: 6.0
 track_point_y: 0.0
 resolution: 0.2
-traversThre: 0.8
+travers_threshold: 0.8
 min_variance: 0.0001
 max_variance: 10000.0
 mahalanobis_distance_threshold: 2.5

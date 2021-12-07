@@ -31,11 +31,13 @@ public:
   virtual void onInitialize();
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
                               double* max_y);
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
 private:
   void pointMapCB(const sensor_msgs::PointCloud2& msg);
 
   double mark_x_, mark_y_;
+  double travers_thresh;
   pointCloud ob_pointCloud;
   ros::Subscriber point_map_sub_;
 

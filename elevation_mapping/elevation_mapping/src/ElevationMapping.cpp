@@ -57,6 +57,7 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
     : nodeHandle_(nodeHandle),
       map_(nodeHandle, robot_name_),
       gmap_(nodeHandle, robot_name_),
+      prevMap_({"elevation", "variance", "rough", "slope", "traver", "color_r", "color_g", "color_b", "intensity"}),
       robotName(robot_name_),
       robotMotionMapUpdater_(nodeHandle),
       isContinouslyFusing_(false),
@@ -69,7 +70,8 @@ ElevationMapping::ElevationMapping(ros::NodeHandle& nodeHandle, string robot_nam
   
   // hash initialization
   localMap_.rehash(10000);
- 
+  prevMap_.setBasicLayers({"elevation"});
+
   // publishers
   pointMapPublisher_ = nodeHandle_.advertise<sensor_msgs::PointCloud2>(robotName + "/history_point", 1);
   subMapPublisher_ = nodeHandle_.advertise<dislam_msgs::SubMap>(robotName + "/submap", 1);
@@ -163,6 +165,7 @@ bool ElevationMapping::readParameters()
 
   nodeHandle_.param("map_frame_id", mapFrameId, string("/map"));
   map_.setFrameId(mapFrameId);
+  prevMap_.setFrameId(mapFrameId);
 
   grid_map::Length length;
   grid_map::Position position;
@@ -173,7 +176,8 @@ bool ElevationMapping::readParameters()
   nodeHandle_.param("position_y", position.y(), 0.0);
   nodeHandle_.param("resolution", resolution, 0.01);
   map_.setGeometry(length, resolution, position);
-  
+  prevMap_.setGeometry(length, resolution, position);
+
   nodeHandle_.param("map_saving_file", mapSavingDir, string("/home/mav-lab/slam_ws/test.pcd"));
   nodeHandle_.param("submap_saving_dir", submapDir, string("/home/mav-lab/slam_ws/"));
 
@@ -230,6 +234,7 @@ bool ElevationMapping::initialize()
   roadOctoTree = new octomap::ColorOcTree(octoRoadResolution_);  
   obsOctoTree = new octomap::ColorOcTree(octoObsResolution_);  
   denseSubmap = false;
+  preMapAvail = false;
   newLocalMapFlag = 1;
   JumpOdomFlag = 0;
   JumpCount = 0;
@@ -308,7 +313,7 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   pcl::fromPCLPointCloud2(Point_cloud, *pointCloud);
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
   cv::Mat img = cv_ptr -> image;
-  
+
   // calculate extrinsic parameters
   float P_x, P_y;
   float width, height;
@@ -356,7 +361,7 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
     midPoint.y = P_y;
 
     // Project image to lidar point cloud
-    if(midPoint.x > 0 && midPoint.x < img.size().width && midPoint.y > 0 && midPoint.y < img.size().height){ // NCLT need to flip height, width  
+    if(midPoint.x > 0 && midPoint.x < img.size().width && midPoint.y > 0 && midPoint.y < img.size().height && P_img.z() > 0){ // NCLT need to flip height, width  
       int b = img.at<cv::Vec3b>(midPoint.y,midPoint.x)[0];
       int g = img.at<cv::Vec3b>(midPoint.y,midPoint.x)[1];
       int r = img.at<cv::Vec3b>(midPoint.y,midPoint.x)[2];
@@ -396,6 +401,8 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   float traver[length_ * length_];
   float var[length_ * length_];
   float intensity[length_ * length_];
+  
+  preMapAvail = false;
 
   // calculate point cloud attributes
   Map_feature(length_, elevation, var, point_colorR, point_colorG, point_colorB, rough, slope, traver, intensity);
@@ -411,6 +418,7 @@ void ElevationMapping::Callback(const sensor_msgs::PointCloud2ConstPtr& rawPoint
   // raytracing for obstacle removal
   Raytracing(length_);
   prevMap_ = map_.visualMap_;
+  preMapAvail = true;
 }
 
 
@@ -472,8 +480,11 @@ void ElevationMapping::savingSubMap()
 void ElevationMapping::composingGlobalMap()
 {
   // ROS_INFO("composingGlobalMap");
-  if(globalMap_.size() > 1){
+  if(globalMap_.size() >= 1 && preMapAvail){
     pointCloud cloudpt;
+    pointCloud::Ptr grid_pc;
+
+    gridMaptoPointCloud(prevMap_, grid_pc);
 
     for(int i = 0; i < globalMap_.size(); i++){
       cloudpt += globalMap_[i];
@@ -485,7 +496,9 @@ void ElevationMapping::composingGlobalMap()
     globalMapPublisher_.publish(output);
 
     octomap_msgs::Octomap road_octomsg, obs_octomsg;
-    pointCloudtoOctomap(cloudpt, *roadOctoTree, *obsOctoTree);
+
+    pointCloudtoOctomap(*grid_pc, *roadOctoTree, *obsOctoTree);
+    
     octomap_msgs::fullMapToMsg(*roadOctoTree, road_octomsg);
     road_octomsg.header.frame_id = mapFrameId;
     road_octomsg.resolution = roadOctoTree->getResolution();  
@@ -504,16 +517,15 @@ void ElevationMapping::composingGlobalMap()
  */
 void ElevationMapping::visualPointMap()
 {
-  // ros::Rate r(10);
-	// while(ros::ok()){
   if(!optFlag){
+    pointCloud::Ptr grid_pc;
+    gridMaptoPointCloud(map_.visualMap_, grid_pc);
     sensor_msgs::PointCloud2 output;
-    pcl::toROSMsg(visualCloud_, output);
+    pcl::toROSMsg(visualCloud_+*grid_pc, output);
     output.header.frame_id = mapFrameId;
     pointMapPublisher_.publish(output);
   }
-  //   r.sleep();
-  // }
+
 }
 
 
@@ -607,11 +619,10 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
      prevMap_ = map_.visualMap_;
 
   // Should adapt to the SLAM. Check if a new local map is needed
-  // if(initFlag == 0 && sqrt(pow((trackPoseTransformed_.getOrigin().x() - trajectory_.back().translation().x()),2) + pow((trackPoseTransformed_.getOrigin().y() - trajectory_.back().translation().y()),2)) >= localMapSize_){
-  //   newLocalMapFlag = 1;
-  //   keyFramePCPublisher_.publish(rawPointCloud);
-  //   ROS_WARN("NEW KEYFRAME ****************");
-  // }
+  if(initFlag == 0 && sqrt(pow((trackPoseTransformed_.getOrigin().x() - trajectory_.back().translation().x()),2) + pow((trackPoseTransformed_.getOrigin().y() - trajectory_.back().translation().y()),2)) >= localMapSize_){
+    newLocalMapFlag = 1;
+    keyFramePCPublisher_.publish(rawPointCloud);
+  }
 
   // main if for generate local map
   if(newLocalMapFlag == 1 && (JumpFlag == 1 || optFlag == 0)){// && JumpOdomFlag == 0){ // At the local_map's boundary
@@ -690,7 +701,7 @@ void ElevationMapping::updateLocalMap(const sensor_msgs::PointCloud2ConstPtr& ra
       JumpFlag = 0;
       
       newLocalMapFlag = 0;
-      ROS_ERROR("Init......");
+      ROS_INFO("Map Stack Initialized.");
       return;
     }
     
@@ -970,8 +981,6 @@ bool ElevationMapping::updatepointsMapLocation(const ros::Time& timeStamp)
   trackPointTransformed_y = trackPointTransformed.point.y;
   trackPointTransformed_z = trackPointTransformed.point.z;
 
-  // ROS_WARN("JumpOdomFlag %d, trackPointTransformed_z %lf, later_trackPointTransformed_z %lf", JumpOdomFlag, trackPointTransformed_z, later_trackPointTransformed_z);
-
   // JumpOdom is not sync to the tf in front-end odometry
   if(JumpOdomFlag == 1 && abs(trackPointTransformed_z - later_trackPointTransformed_z) <= 0.02){
     JumpCount ++;
@@ -1134,20 +1143,30 @@ void ElevationMapping::localHashtoPointCloud(umap localMap, pointCloud::Ptr& out
  */
 void ElevationMapping::pointCloudtoOctomap(pointCloud localPointCloud, octomap::ColorOcTree& roadTree, octomap::ColorOcTree& obsTree)
 {
+  pcl::PointCloud<Anypoint>::Ptr filteredPointcloud(new pcl::PointCloud<Anypoint>);
+  filteredPointcloud = localPointCloud.makeShared();
+
+  // Create the filtering object
+  pcl::StatisticalOutlierRemoval<Anypoint> sor;
+  sor.setInputCloud(filteredPointcloud);  
+  sor.setMeanK(20);  
+  sor.setStddevMulThresh(1.0); 
+  sor.filter(localPointCloud);
+
+  roadTree.clear();
+  obsTree.clear();
+  
   for(auto p:localPointCloud.points) {
     // insert point into tree
-    if(p.travers > traversThre)
+    if(p.travers > traversThre){
       roadTree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
-    else
-      obsTree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
-  }
-  for(auto p:localPointCloud.points) {
-    // integrate color point into tree
-    if(p.travers > traversThre)
       roadTree.integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b);
-    else
+    }else if(p.travers <= traversThre && !std::isnan(p.travers)){
+      obsTree.updateNode(octomap::point3d(p.x, p.y, p.z), true);
       obsTree.integrateNodeColor( p.x, p.y, p.z, p.r, p.g, p.b);
+    }
   }
+
   roadTree.updateInnerOccupancy();
   obsTree.updateInnerOccupancy();
 }
@@ -1174,19 +1193,17 @@ void ElevationMapping::pointCloudtoHash(pointCloud localPointCloud, umap& out)
 /*
  * Utility function: convert grid map to point cloud
  */
-void ElevationMapping::gridMaptoPointCloud(grid_map::GridMap gridmap, pointCloud::Ptr& pc)
+void ElevationMapping::gridMaptoPointCloud(grid_map::GridMap& gridmap, pointCloud::Ptr& pc)
 {
   Anypoint point;
   pointCloud out_pc;
 
   int index, index_x, index_y;
-  grid_map::Index startIndex = gridmap.getStartIndex();
-
   for (GridMapIterator iterator(gridmap); !iterator.isPastEnd(); ++iterator) {
     index_x = (*iterator).transpose().x();
     index_y = (*iterator).transpose().y();
     index = index_x * length_ + index_y;
-    if(gridmap.at("elevation", *iterator) != -10)
+    if(gridmap.at("elevation", *iterator) != -10 && gridmap.at("traver", *iterator) != -10 && !std::isnan(gridmap.at("traver", *iterator)))
     {
       grid_map::Position gridPosition;
       gridmap.getPosition(*iterator, gridPosition);
@@ -1199,7 +1216,7 @@ void ElevationMapping::gridMaptoPointCloud(grid_map::GridMap gridmap, pointCloud
       point.b = gridmap.at("color_b", *iterator);
       point.intensity = gridmap.at("intensity", *iterator);
       point.covariance =  gridmap.at("variance", *iterator);
-      point.travers = gridmap.at("traver", *iterator);     
+      point.travers = gridmap.at("traver", *iterator);
       out_pc.push_back(point);
     }
   }

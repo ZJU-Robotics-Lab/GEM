@@ -48,7 +48,6 @@ int main(int argc, char** argv)
   boost::thread MapPublisherThread(&elevation_mapping::ElevationMapping::Run, &elevationMap);
   boost::thread MapComposingThread(&elevation_mapping::ElevationMapping::composingGlobalMapThread, &elevationMap);
   boost::thread LoopCloseThread(&elevation_mapping::ElevationMapping::updateGlobalMap, &elevationMap);
-  // boost::thread VisualizeThread(&elevation_mapping::ElevationMapping::visualPointMap, &elevationMap);
 
   ros::MultiThreadedSpinner spinner(4);
   elevationMap.startsync();

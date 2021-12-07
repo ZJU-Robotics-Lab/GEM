@@ -143,6 +143,12 @@ class ElevationMap
    */
   const std::string& getFrameId();
 
+  /*!
+   * Reformat robot name.
+   * @return the frameId.
+   */
+  std::string reformatFrameId(std::string robotName);
+
   friend class ElevationMapping;
 
  private:
@@ -186,8 +192,9 @@ class ElevationMap
   ros::Publisher orthomosaicPublisher_;
 
   std::string orthoDir;
-  string robot_id;
-  string robot_name_;
+  std::string robot_id;
+  std::string robot_name_;
+  std::string frame_id;
 
   //! Parameters. Are set through the ElevationMapping class.
   double minVariance_;

@@ -4,7 +4,7 @@ find_package(CUDA REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(kindr)
 
-set(CUDA_NVCC_FLAGS -O3;-G;-g)  
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -O3; -std=c++14)  
 #include_directories(${EIGEN3_INCLUDE_DIRS})
 file(GLOB_RECURSE CURRENT_HEADERS *.h *.hpp *.cuh) 
 file(GLOB CURRENT_SOURCES *.cpp *.cu) 

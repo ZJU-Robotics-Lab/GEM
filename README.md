@@ -131,9 +131,14 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 
 #### Subscribed Topics
 
-* **`/points`** ([sensor_msgs/PointCloud2])
+* **`/voxel_grid/output`** ([sensor_msgs/PointCloud2])
 
-    The distance measurements. Modify it in launch/simple_demo.launch
+    The distance measurements, downsampled for quick process. Modify it in launch/simple_demo.launch
+
+* **`/stereo_grey/left/image_raw`** ([sensor_msgs/Image])
+
+    The related image. Modify it in launch/simple_demo.launch
+
 
 * **`/tf`** ([tf/tfMessage])
 
@@ -142,14 +147,23 @@ This is the main GEM node. It uses the distance sensor measurements and the pose
 
 #### Published Topics
 
-* **`submap`** ([sensor_msgs/PointCloud2])
+* **`${robot_name}/submap`** ([sensor_msgs/PointCloud2])
 
     The previous submap point cloud for visualization.
 
-* **`history_pointcloud`** ([sensor_msgs/PointCloud2])
+* **`${robot_name}/history_pointcloud`** ([sensor_msgs/PointCloud2])
 
     The history pointcloud for visualization.
     
+
+* **`${robot_name}/local_octomap`** ([octomap_msgs::Octomap])
+
+    The local octomap.
+
+* **`${robot_name}/global_octomap`** ([octomap_msgs::Octomap])
+
+    The global octomap.
+
 * **`/move_base/global_costmap/costmap`** ([nav_msgs/OccupancyGrid])
 
     The global costmap for exploration.

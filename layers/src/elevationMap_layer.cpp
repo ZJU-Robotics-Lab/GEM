@@ -18,7 +18,8 @@ void ElevationMapLayer::onInitialize()
     ros::NodeHandle nh("~/" + name_);
 
     std::string source_topic;
-    nh.param<std::string>("source_topic", source_topic, std::string("/velodyne_points"));
+    nh.param("source_topic", source_topic, std::string("/velodyne_points"));
+    nh.param("travers_thresh", travers_thresh, 0.5);
 
     // subscriber for elevation map
     elevation_map_available_ = false;
@@ -59,7 +60,7 @@ void ElevationMapLayer::updateBounds(double robot_x, double robot_y, double robo
         {
         
             const grid_map::Index gindex(*iterator);
-            bool is_obstacle = (data(gindex(0), gindex(1)) <0.7);
+            bool is_obstacle = (data(gindex(0), gindex(1)) < travers_thresh);
 
             grid_map::Position pos;
             elevation_map_.getPosition(gindex, pos);

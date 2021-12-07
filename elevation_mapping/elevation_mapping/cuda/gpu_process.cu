@@ -653,18 +653,16 @@ __global__ void G_Mapfeature(int *d_colorR, int *d_colorG, int *d_colorB, float 
         float Traver = 0.5 * (1.0 - Slope / 0.6)+ 0.5 * (1.0 - (Rough / 0.2));
         d_slope[idx] = Slope; 
         d_rough[idx] = Rough;
-        if(Traver > 0.7)
-            d_traver[idx] = 1;
-        else
-        d_traver[idx] = 0;
+
+        d_traver[idx] = Traver;
         map_traver[idx] = Traver;
     }
     else
     {
         d_slope[idx] = 0; 
         d_rough[idx] = 0;
-        d_traver[idx] = 1;
-        map_traver[idx] = 1;
+        d_traver[idx] = -10;
+        map_traver[idx] = -10;
     }
     
 }

@@ -15,6 +15,7 @@ plugins:
 points_layer:
   enabled: true
   source_topic: "/robot0/history_point"
+  travers_thresh: 0.7
 
 inflation_layer:
  enabled: true

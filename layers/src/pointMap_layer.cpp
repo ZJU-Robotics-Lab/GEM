@@ -20,6 +20,7 @@ void PointMapLayer::onInitialize()
 
     std::string source_topic;
     nh.param("source_topic", source_topic, std::string("/velodyne_points"));
+    nh.param("travers_thresh", travers_thresh, 0.5);
 
     ROS_INFO("\033[1;33m Subscribing to pointcloud topic: %s \033[0m", source_topic.c_str());
 
@@ -69,7 +70,7 @@ void PointMapLayer::updateBounds(double robot_x, double robot_y, double robot_ya
         unsigned int index = getIndex(mx, my);
 
         // directly update costmap using obstacle value given by GEM
-        if(point.travers > 0.1){
+        if(point.travers > travers_thresh){
             costmap_[index] = FREE_SPACE;
         }else{
             costmap_[index] = LETHAL_OBSTACLE;
@@ -81,6 +82,23 @@ void PointMapLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
     updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
+
+void PointMapLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
+                                          int max_j)
+{
+  for (int j = min_j; j < max_j; j++)
+  {
+    for (int i = min_i; i < max_i; i++)
+    {
+      int index = getIndex(i, j);
+      if (costmap_[index] == NO_INFORMATION)
+        continue;
+      master_grid.setCost(i, j, costmap_[index]); 
+      // cout << "set cost i " << i << " j " << j << endl;
+   }
+  }
+}
+
 
 } // end namespace
 

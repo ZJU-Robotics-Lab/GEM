@@ -65,6 +65,15 @@ ElevationMap::~ElevationMap()
 {
 }
 
+std::string ElevationMap::reformatFrameId(std::string robotName)
+{
+  std::string slash = "/";
+  if((robotName.find(slash)) == 0 && !robotName.empty()){
+    robotName = robotName.erase(robotName.find(slash),1);
+  }
+  return robotName;
+}
+
 void ElevationMap::setGeometry(const grid_map::Length& length, const double& resolution, const grid_map::Position& position)
 {
   rawMap_.setGeometry(length, resolution, position);
@@ -89,7 +98,7 @@ sensor_msgs::ImagePtr ElevationMap::show(ros::Time timeStamp, string robot_name,
     index_x = (*iterator).transpose().x();
     index_y = (*iterator).transpose().y();
     index = index_x * length + index_y;
-    if(elevation[index] != -10)
+    if(elevation[index] != -10 && traver[index] != -10 && !std::isnan(traver[index]))
     {
       visualMap_.at("elevation", *iterator) = elevation[index];
       visualMap_.at("variance", *iterator) = var[index];
@@ -122,8 +131,9 @@ sensor_msgs::ImagePtr ElevationMap::show(ros::Time timeStamp, string robot_name,
   sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
   orthomosaicPublisher_.publish(msg);
 
-  pcl_conversions::toPCL(ros::Time::now(), show_pointCloud.header.stamp);
-  show_pointCloud.header.frame_id = robot_name + "/map";
+  pcl_conversions::toPCL(timeStamp, show_pointCloud.header.stamp);
+
+  show_pointCloud.header.frame_id = frame_id;
 
   if(show_pointCloud.size() > 0)
   {
@@ -183,6 +193,7 @@ const kindr::HomTransformQuatD& ElevationMap::getPose()
 
 void ElevationMap::setFrameId(const std::string& frameId)
 {
+  frame_id = reformatFrameId(frameId);
   rawMap_.setFrameId(frameId);
   visualMap_.setFrameId(frameId);
 }

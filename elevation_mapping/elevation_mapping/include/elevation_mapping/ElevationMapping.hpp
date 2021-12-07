@@ -41,6 +41,7 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/common/transforms.h> 
@@ -223,7 +224,7 @@ class ElevationMapping
   /*!
   * Convert from grid map to point cloud
   */
-  void gridMaptoPointCloud(grid_map::GridMap gridmap, pointCloud::Ptr& pc);
+  void gridMaptoPointCloud(grid_map::GridMap& gridmap, pointCloud::Ptr& pc);
   
   /*!
   * Saving point cloud map to a pcd file
@@ -325,6 +326,7 @@ class ElevationMapping
   bool JumpOdomFlag;  // odom change flag
   bool newLocalMapFlag; // new local map flag
   bool insertionFlag;
+  bool preMapAvail; // for multi-resolution octomap visualization
   int JumpCount;
 
   //! initial cache size of robot pose
