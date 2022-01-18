@@ -7,10 +7,12 @@ add_definitions(-w)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure roscpp costmap_2d 
   grid_map_core grid_map_ros grid_map_msgs rqt_gui rqt_gui_py
-   rviz
+   rviz pcl_ros
 )
 
 catkin_package(
@@ -29,6 +31,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
