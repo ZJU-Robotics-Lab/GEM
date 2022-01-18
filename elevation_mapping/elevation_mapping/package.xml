@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>GEM</name>
+  <name>elevation_mapping</name>
   <version>0.4.0</version>
   <description>Generates an elevation map from distance measurements and robot pose information.</description>
   <maintainer email="xuechengxu@zju.edu.cn">Xuecheng Xu</maintainer>
