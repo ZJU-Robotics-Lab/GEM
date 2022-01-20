@@ -90,7 +90,9 @@ In order to install the GEM, clone the latest version from this repository into 
     git clone https://github.com/ANYbotics/kindr_ros.git
     cd ../
     catkin_make
-
+If you encounter error like "/usr/local/cuda-10.1/include/crt/common_functions.h:74:24: error: token ""CUDACC_VER is no longer supported. Use CUDACC_VER_MAJOR, CUDACC_VER_MINOR, and CUDACC_VER_BUILD instead."" is not valid in preprocessor expressions
+#define CUDACC_VER "CUDACC_VER is no longer supported. Use CUDACC_VER_MAJOR, CUDACC_VER_MINOR, and CUDACC_VER_BUILD instead."
+You can refer to https://github.com/ZJU-Robotics-Lab/GEM/issues/1 , it's a eigen issue that we will try to fix it in furture versions.
 
 ## Basic Usage
 
