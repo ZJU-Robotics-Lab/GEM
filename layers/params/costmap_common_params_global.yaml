@@ -1,6 +1,6 @@
 map_type: costmap
-global_frame: /robot0/map
-robot_base_frame: /PandarQT
+global_frame: robot0/map
+robot_base_frame: PandarQT
 
 transform_tolerance: 1.0
 meter_scoring: true
