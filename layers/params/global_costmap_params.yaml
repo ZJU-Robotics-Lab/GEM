@@ -9,6 +9,6 @@ global_costmap:
   origin_y: -100.0
   resolution: 0.2
   static_map: false
-  rolling_window: false
+  rolling_window: true
   
   
