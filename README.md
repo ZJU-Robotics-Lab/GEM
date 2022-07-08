@@ -105,6 +105,8 @@ In order to get the GEM to run with your robot, you will need to adapt some para
 
 You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZnAVSpL0T6GZkJQ14Ptm4w_1ALc/view?usp=sharing
 
+BaiduPan link: https://pan.baidu.com/s/1Er-j5XSpxoTmZZWNSpNvww   extract code: 5j2f 
+
     rosbag play test.bag --clock --pause
     roslaunch filter.launch
     roslaunch elevation_mapping_demos simple_demo.launch
@@ -114,6 +116,8 @@ You can get our demo bag from this link: https://drive.google.com/file/d/1hv3ovZ
 ## Kitti Demo
 
 You can get a kitti demo bag from this link: https://drive.google.com/file/d/17CDKWSGQRlrQcyOy2-T1KbDKfkuRlSF0/view?usp=sharing
+
+BaiduPan link:  https://pan.baidu.com/s/10ebos9dYBEa9WVLuecZLug  extract code: 1uh5 
 
     rosbag play kitti.bag --clock --pause
     roslaunch filter_kitti.launch
