@@ -1,14 +1,17 @@
 ## GEM: Online Globally consistent dense elevation mapping for unstructured terrain
 
+## NEWS (Aug, 2022): SLAM system released!
+- A multi-robot SLAM system with elevation mapping is released at https://github.com/MaverickPeter/MR_SLAM
+
 ### NEW FEATURES !!!
 
-**1. Multi-resolution map representation implemented with octomap**
+- **1. Multi-resolution map representation implemented with octomap**
 
-**2. Submap point cloud upsample implemented by mls api in PCL**
+- **2. Submap point cloud upsample implemented by mls api in PCL**
 
-**3. Add costmap api for exploration tasks**
+- **3. Add costmap api for exploration tasks**
 
-**4. Add loop correction module (relative front-end is coming soon)**
+- **4. Add loop correction module (relative front-end is coming soon)**
 
 This is a [ROS] package developed for elevation mapping with a mobile robot which is modified on [ANYbotics](https://www.anybotics.com/) Elevation Map method. This package further implements a GPU version of the point cloud process and a global mapping module. 
 
