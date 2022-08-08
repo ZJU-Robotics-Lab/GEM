@@ -993,8 +993,8 @@ void Init_GPU_elevationmap(int length, float resolution, float h_mahalanobisDist
 
 float PositionToRange(float p, float shift, float resolution)
 {
-    int p_index = p /resolution;
-    int shift_index = shift /resolution;
+    int p_index = round(p /resolution);
+    int shift_index = round(shift /resolution);
     int current_index = p_index + shift_index;
     return (current_index * resolution);
 }
