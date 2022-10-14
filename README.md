@@ -2,6 +2,7 @@
 
 ## NEWS (Aug, 2022): SLAM system released!
 - A multi-robot SLAM system with elevation mapping is released at https://github.com/MaverickPeter/MR_SLAM
+- A simple chinese tutorial is release at my blog https://maverickpeter.github.io/2022/03/15/GEM-tutorial/
 
 ### NEW FEATURES !!!
 
