@@ -481,7 +481,7 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
        {
             if(point_index[i] != map_index || points_h[i] == -1)
                 continue;
-            if (map_elevation[map_index]== -10){
+            if (map_elevation[map_index] == -10 || !std::isnan(map_elevation[map_index])){
                 // No prior information in elevation map, use measurement.
                 map_elevation[map_index] = points_h[i];
                 map_variance[map_index] = points_v[i];
