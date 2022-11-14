@@ -481,7 +481,7 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
        {
             if(point_index[i] != map_index || points_h[i] == -1)
                 continue;
-            if (map_elevation[map_index] == -10 || !std::isnan(map_elevation[map_index])){
+            if (map_elevation[map_index] == -10){
                 // No prior information in elevation map, use measurement.
                 map_elevation[map_index] = points_h[i];
                 map_variance[map_index] = points_v[i];
@@ -497,6 +497,8 @@ __global__ void G_fuse(int *point_index, int *points_colorR, int *points_colorG,
             // Deal with multiple heights in one cell.
             // Debug fabs,sqrt！！！！！！！！！！！！！！！！！！
             // printf("points height:%f;points var:%f;point_num:%d;cells height:%f, map_variance:%f\n", points_max[i], points_var[i], points_num[i], map_elevation[map_index], map_variance[map_index]);
+                if(map_variance[map_index] < 0.0001)
+                    map_variance[map_index] = 0.0001;    
                 const float mahalanobisDistance = fabs(points_h[i] - map_elevation[map_index]) / sqrt(map_variance[map_index]);
                 //printf("mahalanobisDistance:%f\n", mahalanobisDistance);
                 if (mahalanobisDistance > 5) {

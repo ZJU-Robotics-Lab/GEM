@@ -229,7 +229,8 @@ bool ElevationMapping::initialize()
 
   Duration(1.0).sleep(); // Need this to get the TF caches fill up.
   resetMapUpdateTimer();
-  
+  position_shift[0] = 0.0;
+  position_shift[1] = 0.0;
   octoTree = new octomap::ColorOcTree(octoRoadResolution_);
   roadOctoTree = new octomap::ColorOcTree(octoRoadResolution_);  
   obsOctoTree = new octomap::ColorOcTree(octoObsResolution_);  
@@ -270,6 +271,7 @@ void ElevationMapping::processpoints(pcl::PointCloud<Anypoint>::ConstPtr pointCl
   if (!this->sensorProcessor_->process(pointCloud, pointProcessed, point_colorR, point_colorG, point_colorB, point_index, point_intensity, point_height, point_var)) {
     ROS_ERROR("Point cloud could not be processed.");
     this->resetMapUpdateTimer();
+    return;
   }
 
   boost::recursive_mutex::scoped_lock lock(MapMutex_);
